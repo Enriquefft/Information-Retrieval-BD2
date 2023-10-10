@@ -34,11 +34,11 @@ mock_data = [
 ] * 100000000
 
 @app.get("/search")
-async def root(k: int = 10):
+async def search(keywords: str, k: int = 10):
     return {"result": mock_data[:k]}
 
 @app.get("/autocomplete")
-async def root(word: str):
+async def autocomplete(word: str):
     return {"result": [
         word + "a", 
         word + "b", 
