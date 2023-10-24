@@ -1,15 +1,40 @@
 import typing
+import os
+import pickle
+from preprocessor import Preprocessor
+
+class ReaderRaw:
+    def __init__(self, _source_filename):
+        self.processed_source_filename = _source_filename
+        self.preprocessor = Preprocessor()
+
+    def reader(self) :
+        with open(self.processed_source_filename, 'r') as processed_file:
+            id: int  = 1
+            while True:
+                # next word
+                word = ""
+                while (not word.endswith(" ") and not (finish := word.endswith("\n"))):
+                    word += (chunk := processed_file.read(1))
+                    if (chunk == ''):
+                        print("Finished reading file")
+                        print("Last word: " + word)
+                        return
+                for token in self.preprocessor.preprocess_word(word):  
+                    yield (token, id)
+                
+                if (finish):
+                    id += 1
 
 class SpimiInvert:
-    dictionary:dict = dict()
-
-    output_file:typing.TextIO = None 
-    output_file_name:str = ""
-
-    number_blocks:int = 1
+    def __init__(self, source_file: str) -> None:
+        self.dictionary = dict()
+        self.number_blocks:int = 1
+        self.source_file = source_file
+        self.reader = ReaderRaw(self.source_file)
 
     def free_memory_available(self) -> bool:
-        if (len(self.dictionary) < 3):
+        if (len(self.dictionary) < 260):
             return True
         else:
             return False
@@ -29,24 +54,27 @@ class SpimiInvert:
         return dict(sorted(self.dictionary.items(), key=lambda x: x[0], reverse=False))
 
     def write_block_to_disk(self) -> None:
-        pass
-
-    def spimi_invert(self, token_stream: list) -> None:
-        if (self.output_file == None):
-            self.output_file_name = f"{self.number_blocks}.block"
-            self.output_file = open(self.output_file_name, 'w')
-
-        while (self.free_memory_available()):
-            token = token_stream[0]
-            if (token not in self.dictionary):
-                posting_list = self.add_to_dictionary(self.dictionary, token_stream)
-            else:
-                posting_list = self.get_posting_list(self.dictionary, token)
+        os.makedirs("blocks", exist_ok=True)
+        with open(f"blocks/{self.number_blocks}.block", 'wb') as block_file:
+            pickle.dump(self.dictionary, block_file)
+    
+    def create_blocks(self) -> None:
+        self.number_blocks: int = 1
+        self.dictionary = dict()
+        for token, doc_id in self.reader.reader():
+            print(f"Processing block {self.number_blocks}")
+            if not self.free_memory_available():
+                self.sort_terms()
+                self.write_block_to_disk()
+                self.dictionary.clear()
+                self.number_blocks += 1
             
-            self.add_to_posting_list(token, posting_list)
-
-        self.dictionary = self.sort_terms(self.dictionary)
-
+            tmp = self.dictionary.get(token, {})
+            count = tmp.get(doc_id, 0)
+            count += 1
+            tmp[doc_id] = count
+            self.dictionary[token] = tmp 
+        self.sort_terms()
         self.write_block_to_disk()
-
-        return self.output_file_name
+        self.dictionary.clear()
+        return (self.number_blocks, "blocks/")

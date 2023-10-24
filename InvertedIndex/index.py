@@ -1,22 +1,9 @@
 import csv
-import ast
-
-from preprocessor import Preprocessor
-
+from spimi_invert import SpimiInvert
+import tracemalloc
 class Index:
-    preprocessor = Preprocessor()
-
-    number_documents:int = 0
-    #number_terms:int = 0
-
-    # File names
-    source_filename:str = ""
-    processed_source_filename:str = ""
-    
-    # Attributes to index
-    index_attributes:set = set()
-
     def __init__(self, _source_filename: str, _index_attributes: set) -> None:
+        self.number_documents:int = 0
         self.source_filename = _source_filename
         self.processed_source_filename = _source_filename + ".processed"
 
@@ -35,31 +22,22 @@ class Index:
                 # Concatenate all values in row
                 concatenated_word = " ".join(row.values())
 
-                # Preprocess document  { keyword : term_frequency, ...} 
-                processed_list = self.preprocessor.preprocess_text(concatenated_word)
-
-                # Write keyword with its frequency and document id
-                for keyword in processed_list:
-                    term_frequency = processed_list[keyword]
-                    processed_file.write(f"('{keyword}', {term_frequency}, {self.number_documents})\n")
-
-                # processed_file.write(str(processed_list) + "\n")
-                
-                if (self.number_documents == 10):
-                    break
-
+                processed_file.write(str(concatenated_word) + "\n")
+    def _merge(self, number_of_blocks: int, path: str) -> None:
+        ...
     def create_blocks(self) -> None:
-        # Read processed file
-        with open(self.processed_source_filename, 'r') as processed_file:
-            while True:
-                if (processed_file.readline() == ""):
-                    break
+        print("Creating blocks")
+        spimi = SpimiInvert(self.processed_source_filename)
+        print("Writing blocks")
+        n_blocks, path = spimi.create_blocks()
+        print("Merging blocks")
+        self._merge(n_blocks, path)
 
                 
-
 attributes = set()
 attributes.add("track_name")
-
+attributes.add("track_artist")
+attributes.add("lyrics")
 a = Index("spotify_songs.csv", attributes)
 
 a.process_source_file()

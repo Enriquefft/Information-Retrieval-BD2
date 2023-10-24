@@ -37,3 +37,10 @@ class Preprocessor:
         stemmed_list = self.stem(filtered_list)
         stemmed_dict = dict(Counter(stemmed_list))
         return dict(sorted(stemmed_dict.items(), key=lambda x: x[0], reverse=False))
+    
+    def preprocess_word(self, word:str) -> list[str]:
+        if word in self.stopwords:
+            return []
+        tokenized_word = self.tokenize(word)
+        stemmed_word = [self.stemmer.stem(i) for i in tokenized_word]
+        return stemmed_word
