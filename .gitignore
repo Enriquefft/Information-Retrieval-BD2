@@ -1,2 +1,5 @@
-virtualenv/
-__pycache__/
+__pycache__
+spotify_songs.csv
+spotify_songs.csv.processed
+blocks
+venv

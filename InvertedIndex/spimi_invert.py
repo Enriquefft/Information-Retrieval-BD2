@@ -3,6 +3,8 @@ import os
 import pickle
 from preprocessor import Preprocessor
 
+DEBUG = True
+
 class ReaderRaw:
     def __init__(self, _source_filename):
         self.processed_source_filename = _source_filename
@@ -34,7 +36,7 @@ class SpimiInvert:
         self.reader = ReaderRaw(self.source_file)
 
     def free_memory_available(self) -> bool:
-        if (len(self.dictionary) < 260):
+        if (len(self.dictionary) < 260 and (DEBUG and len(self.dictionary) < 4)):
             return True
         else:
             return False
@@ -51,16 +53,17 @@ class SpimiInvert:
         self.dictionary[token] = posting_list
 
     def sort_terms(self) -> dict:
-        return dict(sorted(self.dictionary.items(), key=lambda x: x[0], reverse=False))
+        self.dictionary = dict(sorted(self.dictionary.items(), key=lambda x: x[0], reverse=False))
 
     def write_block_to_disk(self) -> None:
         os.makedirs("blocks", exist_ok=True)
         with open(f"blocks/{self.number_blocks}.block", 'wb') as block_file:
             pickle.dump(self.dictionary, block_file)
     
-    def create_blocks(self) -> None:
+    def create_blocks(self) -> tuple[int, str]:
         self.number_blocks: int = 1
         self.dictionary = dict()
+
         for token, doc_id in self.reader.reader():
             print(f"Processing block {self.number_blocks}")
             if not self.free_memory_available():
@@ -73,7 +76,8 @@ class SpimiInvert:
             count = tmp.get(doc_id, 0)
             count += 1
             tmp[doc_id] = count
-            self.dictionary[token] = tmp 
+            self.dictionary[token] = tmp
+
         self.sort_terms()
         self.write_block_to_disk()
         self.dictionary.clear()
