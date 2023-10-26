@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "information-retrieval-bd2"
+version = "0.1.0"
+description = "Information retrieval system using inverted index, made for BD2"
+authors = ["Enrique <enrique.flores@utec.edu.pe>"]
+readme = "README.md"
+packages = [{include = "information_retrieval_bd2"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

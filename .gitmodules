@@ -1,0 +1,3 @@
+[submodule "libs/InverseIndex"]
+	path = libs/InverseIndex
+	url = git@github.com:Enriquefft/InverseIndex.git
