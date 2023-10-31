@@ -65,7 +65,7 @@ class SpimiInvert:
         self.dictionary = dict()
 
         for token, doc_id in self.reader.reader():
-            print(f"Processing block {self.number_blocks}")
+            # print(f"Processing block {self.number_blocks}")
             if not self.free_memory_available():
                 self.sort_terms()
                 self.write_block_to_disk()

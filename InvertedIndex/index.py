@@ -60,24 +60,22 @@ class MinHeap:
         self.data = []
         self.sz = 0
     
-    def push(self, key: str, value: dict[int, int]) -> None:
-        heapq.heappush(self.data, (key, self.sz, value))
+    def push(self, key: str, value: dict[int, int], index: int) -> None:
+        heapq.heappush(self.data, (key, self.sz, value, index))
         self.sz += 1
     
-    def pop(self) -> tuple[str, dict[int, int]]:
+    def pop(self) -> tuple[str, dict[int, int], int]:
         x = heapq.heappop(self.data)
         self.sz -= 1
-        return (x[0], x[2])
+        return (x[0], x[2], x[3])
     
     def size(self) -> int: return self.sz
 
     def push_dict(self, dic: dict[int, int], index: int) -> None:
         for (key, value) in dic.items():
-            heapq.heappush(self.data, (key, self.sz, value))
+            heapq.heappush(self.data, (key, self.sz, value, index))
             self.sz += 1
         
-
-
 # Load the block if exists
 def load_block(index: int, path: str) -> Block:
     if os.path.exists(f"{path}/{index}.block"):
@@ -90,29 +88,6 @@ def write_block_to_disk(block: Block, index: int, path: str) -> None:
         os.makedirs(path, exist_ok=True)
         with open(f"{path}/{index}.block", 'wb') as file:
             pickle.dump(block, file)
-
-def create_blocks(self) -> tuple[int, str]:
-        self.number_blocks: int = 1
-        self.dictionary = dict()
-
-        for token, doc_id in self.reader.reader():
-            print(f"Processing block {self.number_blocks}")
-            if not self.free_memory_available():
-                self.sort_terms()
-                self.write_block_to_disk()
-                self.dictionary.clear()
-                self.number_blocks += 1
-            
-            tmp = self.dictionary.get(token, {})
-            count = tmp.get(doc_id, 0)
-            count += 1
-            tmp[doc_id] = count
-            self.dictionary[token] = tmp
-
-        self.sort_terms()
-        self.write_block_to_disk()
-        self.dictionary.clear()
-        return (self.number_blocks, "blocks/")
 
 def free_memory_available(d) -> bool:
         if len(d) < 4:
@@ -141,12 +116,14 @@ def MergeSortBlocks(p: int, r: int, path: str) -> int:
         MergeSortBlocks(q+1, r, path)
         n: int = MergeBlocks(p, q, r, path)
         # Visualización de los bloques que se han mergeado
-        # for i in range(n - p + 1):
-        #     block = load_block(p + i, path)
-        #     print(block)
-        return n
+        for i in range(n - p + 1):
+            print(f"Bloque #{p + i}")
+            block = load_block(p + i, path)
+            print(block)
+        return n - p + 1
     
     return 0
+
 
 def MergeBlocks(p: int, q: int, r: int, path: str) -> int:
     print(f"Merging: {p}, {q}, {r}")
@@ -156,18 +133,18 @@ def MergeBlocks(p: int, q: int, r: int, path: str) -> int:
     k = p   # Index for the output block
 
     output: Block = {}
-    heap = MinHeap()
-    while i <= q or j <= r:
-        input1: Block = load_block(i, path) # First input (blocks [p to q])
-        input2: Block = load_block(j, path) # Second input (blocks [q+1 to r])
-        
-        
-        size1: int = len(input1, i)
-        size2: int = len(input2, j)
+    input1: Block = load_block(i, path) # First input (blocks [p to q])
+    input2: Block = load_block(j, path) # Second input (blocks [q+1 to r])
 
-        # Push elements of input 1 and 2 into heap
-        heap.push_dict(input1)
-        heap.push_dict(input2)
+    heap = MinHeap()
+
+    while i <= q and j <= r:
+        size1: int = len(input1)
+        size2: int = len(input2)
+
+        # Push to heap
+        heap.push_dict(input1, i)
+        heap.push_dict(input2, j)
 
         count1: int = 0
         count2: int = 0
@@ -184,6 +161,7 @@ def MergeBlocks(p: int, q: int, r: int, path: str) -> int:
             # but for now we will use the lenght of the block
             if not free_memory_available(output):
                 write_block_to_disk(output, k, path)
+                output.clear()
                 k += 1
 
             if idinput == i:
@@ -197,48 +175,86 @@ def MergeBlocks(p: int, q: int, r: int, path: str) -> int:
                 if i > q: break
                 input1 = load_block(i, path)
                 heap.push_dict(input1, i)
+                count1 = 0
+                size1 = len(input1)
 
             elif count2 == size2:
                 j = j + 1
 
                 if j > r: break
                 input2 = load_block(j, path)
-                heap.push_dict(input2, i)
+                heap.push_dict(input2, j)
+                count2 = 0
+                size2 = len(input2)
 
+    while i <= q:
+        if heap.size() == 0:
+            input1 = load_block(i, path)
+            heap.push_dict(input1, i)
         
+        size1: int = heap.size()
+        count1: int = 0
 
-        while i <= q:
-            input: Block = load_block(i, path)
+        while heap.size() > 0:
+            key, value, idinput = heap.pop()
+            
+            if output.get(key) is None:
+                output[key] = value
+            else:
+                output[key].update(value)
 
-            heap.push_dict(input)
+            # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
+            # but for now we will use the lenght of the block
+            if not free_memory_available(output):
+                write_block_to_disk(output, k, path)
+                output.clear()
+                k += 1
 
-            while heap.size() > 0:
-                key, value, idinput = heap.pop()
-                
-                if output.get(key) is None:
-                    output[key] = value
-                else:
-                    output[key].update(value)
+            count1 = count1 + 1
+            
+            if count1 == size1:
+                i = i + 1
 
-                if not free_memory_available(output):
-                    write_block_to_disk(output, k, path)
-                    k += 1
+                if i > q: break
+                input1 = load_block(i, path)
+                heap.push_dict(input1, i)
+                count1 = 0
+                size1 = len(input1)
 
-        while j <= r:
-            input: Block = load_block(j, path)
-            heap.push_dict(input)
 
-            while heap.size() > 0:
-                key, value, idinput = heap.pop()
-                
-                if output.get(key) is None:
-                    output[key] = value
-                else:
-                    output[key].update(value)
+    while j <= r:
+        if heap.size() == 0:
+            input2 = load_block(j, path)
+            heap.push_dict(input2, j)
 
-                if not free_memory_available(output):
-                    write_block_to_disk(output, k, path)
-                    k += 1
+        size2: int = heap.size()
+        count2: int = 0
+
+        while heap.size() > 0:
+            key, value, idinput = heap.pop()
+            
+            if output.get(key) is None:
+                output[key] = value
+            else:
+                output[key].update(value)
+
+            # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
+            # but for now we will use the lenght of the block
+            if not free_memory_available(output):
+                write_block_to_disk(output, k, path)
+                output.clear()
+                k += 1
+            
+            count2 = count2 + 1
+
+            if count2 == size2:
+                j = j + 1
+
+                if j > r: break
+                input2 = load_block(j, path)
+                heap.push_dict(input2, j)
+                count2 = 0
+                size2 = len(input2)
     
     if len(output) > 0:
         write_block_to_disk(output, k, path)
@@ -261,7 +277,6 @@ for i in range(1, n+1):
     block_file.close()
 
 x = _merge(n, path)
-print(x)
 
 expected_result = [
     # Bloque 1
