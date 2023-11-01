@@ -1,3 +1,6 @@
 [submodule "libs/InverseIndex"]
 	path = libs/InverseIndex
 	url = git@github.com:Enriquefft/InverseIndex.git
+[submodule "frontend"]
+	path = frontend
+	url = git@github.com:AaronCS25/ir2.git
