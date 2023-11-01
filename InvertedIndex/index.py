@@ -2,10 +2,9 @@ import csv
 import pickle
 from spimi_invert import SpimiInvert
 from preprocessor import Preprocessor
-import heapq
 import math
 
-from util import Merge
+from util import Merge, load_block, Block
 
 class Index:
     UP: bool = False
@@ -19,6 +18,7 @@ class Index:
         self.preprocess                 = Preprocessor()
         self.index_path                 = "./blocks"
         self.n_blocks                   = 0
+        self.norms_filename             = _source_filename + "_norms.dat"
     
     def _read_block(self, pos: int) -> dict:
         with open(self.index_path + f"{pos}.block", "rb") as f:
@@ -32,8 +32,7 @@ class Index:
         
         return block.get(term, []) + self._check_block(term, pos - 1 + 2 * dir, dir) if len(block) != 1 else []
         
-                
-
+    
     def _binary_search(self, term: str, l: int, u: int):
         if l > u :
             return []
@@ -84,6 +83,19 @@ class Index:
         if (df < 1) :
             raise Exception(f"DF {df} malo")
         return math.log10(self.number_documents / df)
+    
+    def _compute_norms(self) -> None:
+        file = open(f"{self.norms_filename}", "wb")
+        for block_id in self.n_blocks:
+            block: Block = load_block(block_id, self.index_path)
+            for _, dic in block:
+                for doc_id, tf_idf in dic:
+                    # Save df-idf
+                    file.seek(doc_id * float.__sizeof__())
+                    file.write(tf_idf ** 2)
+                    
+        file.close()
+        pass
 
     def retrieval(self, query: str, k: int) -> list:
         result = dict()
@@ -99,10 +111,6 @@ class Index:
                     result[doc] =   val
 
         return sorted(result.items(), key=lambda t: t[1])[:k]
-    
-
-
-
 
 # spimi = SpimiInvert("datatest.csv")
 # n, path = spimi.create_blocks()
