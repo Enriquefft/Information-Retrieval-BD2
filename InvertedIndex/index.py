@@ -1,8 +1,14 @@
 import csv
 import pickle
+import struct
 from spimi_invert import SpimiInvert
 from preprocessor import Preprocessor
+from util import write_block_to_disk
+import numpy as np
+
 import math
+
+from os import path
 
 from util import Merge, load_block, Block
 
@@ -39,7 +45,6 @@ class Index:
         
         mid = (l + u) // 2
         block = self._read_block(mid)
-        print(block)
         if term == list(block)[0] : 
             # Case 1
             return block[term] + self._check_block(term, mid - 1, self.UP)
@@ -70,38 +75,124 @@ class Index:
 
                 processed_file.write(str(concatenated_word) + "\n")
 
-    def create_blocks(self) -> None:
-        print("Creating blocks")
-        spimi = SpimiInvert(self.processed_source_filename)
-        print("Writing blocks")
-        n_blocks, path = spimi.create_blocks()
-        self.n_blocks = n_blocks
-        print("Merging blocks")
-        Merge(n_blocks, path)
+    def _get_df(self, term: str, block_id: int) -> int:
+        df = 0
+        while True: 
+            if block_id > self.n_blocks:
+                return df
+            block: Block = load_block(block_id, self.index_path)
+            df_block = len(block.get(term, []))
+            if df_block == 0:
+                return df
+            df += df_block
+            block_id += 1
+
+
+    def _tf_idf_init(self) -> None:
+        df: dict[str, int] = dict()
+        for block_id in range(1, self.n_blocks + 1):
+            block: Block = load_block(block_id, self.index_path)
+            for term, dic in block.items():
+                if term not in df:
+                    df.clear()
+                    df[term] = self._get_df(term, block_id)
+                for doc_id, tf in dic.items():
+                    idf = np.log10(self.number_documents / df[term])
+                    block[term][doc_id] = tf * idf
+            write_block_to_disk(block, block_id, self.index_path)
+            
 
     def _calculate_idf(self, df: int) -> float:
         if (df < 1) :
             raise Exception(f"DF {df} malo")
         return math.log10(self.number_documents / df)
     
-    def _compute_norms(self) -> None:
+    def _initialize_norms(self) -> None:
         file = open(f"{self.norms_filename}", "wb")
-        for block_id in self.n_blocks:
+        
+        for i in range(self.number_documents):
+            norm = struct.pack('f', 0.0)
+            file.write(norm)
+        file.close()
+
+    def _read_load_norm(self, file, size: int) -> float:
+        norm = file.read(size)
+        return struct.unpack('f', norm)[0]
+    
+    def _write_norm(self, file, size: int, doc_id: int, norm: float) -> None:
+        norm = struct.pack('f', norm)
+        file.seek( (doc_id - 1) * size)
+        file.write(norm)
+
+    def _compute_norms(self) -> None:
+        float_bytes_size: int = 4
+        self._initialize_norms()
+        file = open(f"{self.norms_filename}", "rb+")
+        for block_id in range(1, self.n_blocks + 1):
             block: Block = load_block(block_id, self.index_path)
-            for _, dic in block:
-                for doc_id, tf_idf in dic:
-                    # Save df-idf
-                    file.seek(doc_id * float.__sizeof__())
-                    file.write(tf_idf ** 2)
+            for dic in block.values():
+                for doc_id, tf_idf in dic.items():
+                    file.seek( (doc_id - 1) * float_bytes_size)
+                    norm_doc = file.read(float_bytes_size)
+                    norm_doc = struct.unpack('f', norm_doc)[0]
+
+                    norm_doc += tf_idf ** 2
+                    norm_doc = struct.pack('f', norm_doc)
+
+                    file.seek( (doc_id - 1) * float_bytes_size)
+                    file.write(norm_doc)
                     
         file.close()
-        pass
+
+        with open(self.norms_filename, "rb+") as file:
+            for doc_id in range(1, self.number_documents + 1):
+                norm_doc = self._read_load_norm(file, float_bytes_size)
+                norm_doc = math.sqrt(norm_doc)
+                self._write_norm(file, float_bytes_size, doc_id, norm_doc) 
+
+    def _get_norm(self, doc_id: int) -> float:
+        with open(self.norms_filename, "rb+") as file:
+            file.seek( (doc_id - 1) * 4)
+            norm_doc = file.read(4)
+            return struct.unpack('f', norm_doc)[0]
+
+    def _normalize(self) -> None:
+        for block_id in range(1, self.n_blocks + 1):
+            block: Block = load_block(block_id, self.index_path)
+            for keyword, dic in block.items():
+                for doc_id, tf_idf in dic.items():
+                    block[keyword][doc_id] = tf_idf / self._get_norm(doc_id)
+            write_block_to_disk(block, block_id, self.index_path)
+
+    def _print_blocks(self) -> None:
+        for block_id in range(1, self.n_blocks + 1):
+            block: Block = load_block(block_id, self.index_path)
+            print(f"Block {block_id}", block)
+
+    def _print_norms(self) -> None:
+        with open(self.norms_filename, "rb+") as file:
+            for doc_id in range(1, self.number_documents + 1):
+                norm_doc = self._read_load_norm(file, 4)
+                print(f"Norm {doc_id}", norm_doc)
+
+    def create_blocks(self) -> None:
+        spimi = SpimiInvert(self.processed_source_filename)
+        
+        n_blocks, path = spimi.create_blocks()
+        self.n_blocks = n_blocks
+        
+        Merge(n_blocks, path)
+
+        self._tf_idf_init()
+        
+        self._compute_norms()
+
+        self._normalize()
 
     def retrieval(self, query: str, k: int) -> list:
         result = dict()
 
         for term, tf in self.preprocess.preprocess_text(query).items():
-            # print(term)
             docs = self._binary_search(term, 1, self.n_blocks)
             if len(docs) != 0:
                 idf = self._calculate_idf(len(docs))
@@ -111,47 +202,3 @@ class Index:
                     result[doc] =   val
 
         return sorted(result.items(), key=lambda t: t[1])[:k]
-
-# spimi = SpimiInvert("datatest.csv")
-# n, path = spimi.create_blocks()
-
-# for i in range(1, n+1):
-#     block_file = open(f"{path}/{i}.block", 'rb')
-
-#     idx: dict[dict[int,int]] = pickle.load(block_file)
-
-#     print(f"Block {i}", idx)
-    
-#     block_file.close()
-
-# x = _merge(n, path)
-
-x = set()
-x.add("column")
-index = Index("datatest.csv",x)
-index.process_source_file()
-index.create_blocks()
-
-expected_result = [
-    # Bloque 1
-    {
-    "a": {1: 1, 2: 2, 3: 1, 5: 1, 6: 1, 7: 1, 8: 1},
-    "b": {3: 1, 5: 1, 7: 1},
-    "c": {2: 1, 3: 1, 6: 2, 8: 1},
-    "d": {1: 1},
-    },
-    # Bloque 2
-    {
-    "e": {1: 1, 8: 1},
-    "i": {1: 1, 3: 1, 8: 1},
-    "m": {4: 1},
-    "n": {4: 1},
-    },
-    # Bloque 3
-    {
-    "o": {2: 1, 4: 1},
-    "p": {5: 1, 6: 1},
-    "q": {4: 1},
-    "s": {5: 1, 7: 2},
-    },
-]
