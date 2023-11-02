@@ -162,6 +162,7 @@ class Index:
             for keyword, dic in block.items():
                 for doc_id, tf_idf in dic.items():
                     block[keyword][doc_id] = tf_idf / self._get_norm(doc_id)
+            block = list(block.items())
             write_block_to_disk(block, block_id, self.index_path)
 
     def _print_blocks(self) -> None:
@@ -189,6 +190,8 @@ class Index:
 
         self._normalize()
 
+        self._print_blocks()
+
     def retrieval(self, query: str, k: int) -> list:
         result = dict()
 
@@ -202,3 +205,10 @@ class Index:
                     result[doc] =   val
 
         return sorted(result.items(), key=lambda t: t[1])[:k]
+    
+
+x = set()
+x.add("track_artist")
+index = Index("./../CSV/test.csv",x)
+index.process_source_file()
+index.create_blocks()
