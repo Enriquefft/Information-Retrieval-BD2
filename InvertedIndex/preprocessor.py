@@ -1,5 +1,6 @@
 import os
 import nltk
+import csv
 from collections import Counter
 nltk.download('stopwords')
 
@@ -20,7 +21,6 @@ class Preprocessor:
                     self.stopwords.add(line.strip())
         else:
             self.stopwords = set(nltk.corpus.stopwords.words('english'))
-            print(len(self.stopwords))
 
     def tokenize(self, text: str) -> list:
         return self.tokenizer.tokenize(text)
@@ -44,3 +44,21 @@ class Preprocessor:
         tokenized_word = self.tokenize(word)
         stemmed_word = [self.stemmer.stem(i) for i in tokenized_word]
         return stemmed_word
+    
+    def preprocess_csv(self, csv_filename: str, output_filename: str, attributes: set) -> int:
+        number_documents = 0
+        with open(csv_filename, newline='\n') as source_file, open(output_filename, 'w') as processed_file:
+            source_file_reader = csv.DictReader(source_file, delimiter=',')
+            for row in source_file_reader:
+                # Update number of documents
+                number_documents += 1
+                
+                # Select attributes to be indexed
+                row = {key: row[key] for key in attributes}
+
+                # Concatenate all values in row
+                concatenated_word = " ".join(row.values())
+
+                processed_file.write(str(concatenated_word) + "\n")
+
+        return number_documents

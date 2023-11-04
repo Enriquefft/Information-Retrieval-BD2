@@ -16,7 +16,7 @@ class Index:
     UP: bool = False
     DOWN: bool = True
 
-    def __init__(self, _source_filename: str, _index_attributes: set) -> None:
+    def __init__(self, _source_filename: str, _index_attributes: set = None) -> None:
         self.number_documents: int      = 0
         self.source_filename            = _source_filename
         self.processed_source_filename  = _source_filename + ".processed"
@@ -27,8 +27,23 @@ class Index:
         self.norms_filename             = _source_filename + "_norms.dat"
         self.positions_file             = _source_filename + ".position"
     
+        if not path.exists(self.index_path):
+            print("hrere")
+            if self.index_attributes is None:
+                raise Exception("Index attributes required")
+            self.number_documents = self.preprocess.preprocess_csv(self.source_filename, self.processed_source_filename, self.index_attributes)
+            self.create_blocks()
+
+    def save(self):
+        with open(self.source_filename + ".config", "wb") as file:
+            file.write(struct.pack("@ii", self.number_documents, self.n_blocks))
+
+    def load(self):
+        with open(self.source_filename + ".config", "rb") as file:
+            self.number_documents, self.n_blocks = struct.unpack("@ii", file.read(struct.calcsize("@ii")))
+
     def _read_block(self, pos: int) -> dict:
-        with open(self.index_path + f"{pos}.block", "rb") as f:
+        with open(self.index_path + f"/{pos}.block", "rb") as f:
             return pickle.load(f)
 
     def _check_block(self, term: str, pos: int, dir: bool) -> list:
@@ -61,20 +76,6 @@ class Index:
         else : 
             return block.get(term, []) + self._check_block(term, mid - 1, self.UP) + self._check_block(term, mid + 1, self.DOWN) if (len(block) == 1) else []
 
-    def process_source_file(self) -> None:
-        with open(self.source_filename, newline='\n') as source_file, open(self.processed_source_filename, 'w') as processed_file:
-            source_file_reader = csv.DictReader(source_file, delimiter=',')
-            for row in source_file_reader:
-                # Update number of documents
-                self.number_documents += 1
-                
-                # Select attributes to be indexed
-                row = {key: row[key] for key in self.index_attributes}
-
-                # Concatenate all values in row
-                concatenated_word = " ".join(row.values())
-
-                processed_file.write(str(concatenated_word) + "\n")
 
     def _get_df(self, term: str, block_id: int) -> int:
         df = 0
@@ -197,6 +198,7 @@ class Index:
         result = dict()
 
         for term, tf in self.preprocess.preprocess_text(query).items():
+            print(self.n_blocks)
             docs = self._binary_search(term, 1, self.n_blocks)
             if len(docs) != 0:
                 idf = self._calculate_idf(len(docs))
@@ -208,8 +210,8 @@ class Index:
         return sorted(result.items(), key=lambda t: t[1])[:k]
     
 
-# x = set()
-# x.add("track_artist")
+x = set()
+x.add("track_artist")
 # index = Index("./CSV/test.csv",x)
 # index.process_source_file()
 # index.create_blocks()
@@ -219,3 +221,6 @@ class Index:
 #     while True:
 #         t = struct.unpack("i",f.read(struct.calcsize("i")))
 #         print(t)
+i = Index("./CSV/test.csv")
+i.load()
+i.retrieval("aa", 1)
