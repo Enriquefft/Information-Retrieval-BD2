@@ -25,6 +25,7 @@ class Index:
         self.index_path                 = "./blocks"
         self.n_blocks                   = 0
         self.norms_filename             = _source_filename + "_norms.dat"
+        self.positions_file             = _source_filename + ".position"
     
     def _read_block(self, pos: int) -> dict:
         with open(self.index_path + f"{pos}.block", "rb") as f:
@@ -177,7 +178,7 @@ class Index:
                 print(f"Norm {doc_id}", norm_doc)
 
     def create_blocks(self) -> None:
-        spimi = SpimiInvert(self.processed_source_filename)
+        spimi = SpimiInvert(self.processed_source_filename, self.positions_file)
         
         n_blocks, path = spimi.create_blocks()
         self.n_blocks = n_blocks
@@ -207,8 +208,14 @@ class Index:
         return sorted(result.items(), key=lambda t: t[1])[:k]
     
 
-x = set()
-x.add("track_artist")
-index = Index("./../CSV/test.csv",x)
-index.process_source_file()
-index.create_blocks()
+# x = set()
+# x.add("track_artist")
+# index = Index("./CSV/test.csv",x)
+# index.process_source_file()
+# index.create_blocks()
+
+# with open("CSV/test.csv.position", "rb") as f:
+#     import struct 
+#     while True:
+#         t = struct.unpack("i",f.read(struct.calcsize("i")))
+#         print(t)

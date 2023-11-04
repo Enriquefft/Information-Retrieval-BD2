@@ -4,12 +4,16 @@ from util import free_memory_available, sort_terms, write_block_to_disk
 DEBUG = True
 
 class ReaderRaw:
-    def __init__(self, _source_filename):
-        self.processed_source_filename = _source_filename
-        self.preprocessor = Preprocessor()
+    def __init__(self, _source_filename, _positions_filename):
+        self.processed_source_filename  = _source_filename
+        self.positions_file             = _positions_filename
+        self.preprocessor               = Preprocessor()
 
     def reader(self) :
-        with open(self.processed_source_filename, 'r') as processed_file:
+        import struct
+
+        row_position: int = 0
+        with open(self.processed_source_filename, 'r') as processed_file, open(self.positions_file, "wb") as pos_file:
             id: int  = 1
             while True:
                 # next word
@@ -19,19 +23,25 @@ class ReaderRaw:
                     if (chunk == ''):
                         print("Finished reading file")
                         print("Last word: " + word)
+                        
+                        pos_file.write(struct.pack("@i", row_position))
                         return
                 for token in self.preprocessor.preprocess_word(word):  
                     yield (token, id)
-                
                 if (finish):
+
+                    # Write
+                    pos_file.write(struct.pack("@i", row_position))
+
+                    row_position = processed_file.tell() + 1
                     id += 1
 
 class SpimiInvert:
-    def __init__(self, source_file: str) -> None:
-        self.dictionary = dict()
-        self.number_blocks:int = 1
-        self.source_file = source_file
-        self.reader = ReaderRaw(self.source_file)
+    def __init__(self, source_file: str, positions_file: str) -> None:
+        self.dictionary     = dict()
+        self.number_blocks  = 1
+        self.source_file    = source_file
+        self.reader         = ReaderRaw(self.source_file, positions_file)
 
     def add_to_dictionary(self, token_stream: list) -> list:
         self.dictionary[token_stream[0]] = []
