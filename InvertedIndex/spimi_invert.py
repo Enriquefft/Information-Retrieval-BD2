@@ -10,10 +10,8 @@ class ReaderRaw:
         self.preprocessor               = Preprocessor()
 
     def reader(self) :
-        import struct
 
-        row_position: int = 0
-        with open(self.processed_source_filename, 'r') as processed_file, open(self.positions_file, "wb") as pos_file:
+        with open(self.processed_source_filename, 'r') as processed_file:
             id: int  = 1
             while True:
                 # next word
@@ -24,16 +22,10 @@ class ReaderRaw:
                         print("Finished reading file")
                         print("Last word: " + word)
                         
-                        pos_file.write(struct.pack("@i", row_position))
                         return
                 for token in self.preprocessor.preprocess_word(word):  
                     yield (token, id)
                 if (finish):
-
-                    # Write
-                    pos_file.write(struct.pack("@i", row_position))
-
-                    row_position = processed_file.tell() + 1
                     id += 1
 
 class SpimiInvert:

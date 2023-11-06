@@ -45,11 +45,12 @@ class Preprocessor:
         stemmed_word = [self.stemmer.stem(i) for i in tokenized_word]
         return stemmed_word
     
-    def preprocess_csv(self, csv_filename: str, output_filename: str, attributes: set) -> int:
+    def preprocess_csv(self, csv_filename: str, output_filename: str, positions_filename: str, attributes: set) -> int:
+        import struct
         number_documents = 0
-        with open(csv_filename, newline='\n') as source_file, open(output_filename, 'w') as processed_file:
+        with open(csv_filename, newline='\n') as source_file, open(output_filename, 'w') as processed_file, open(positions_filename, "wb") as positions:
             source_file_reader = csv.DictReader(source_file, delimiter=',')
-            for row in source_file_reader:
+            for row in source_file_reader:    
                 # Update number of documents
                 number_documents += 1
                 

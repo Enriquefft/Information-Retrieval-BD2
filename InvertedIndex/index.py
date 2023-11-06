@@ -28,10 +28,10 @@ class Index:
         self.positions_file             = _source_filename + ".position"
     
         if not path.exists(self.index_path):
-            print("hrere")
             if self.index_attributes is None:
                 raise Exception("Index attributes required")
-            self.number_documents = self.preprocess.preprocess_csv(self.source_filename, self.processed_source_filename, self.index_attributes)
+            self.number_documents = self.preprocess.preprocess_csv(self.source_filename, self.processed_source_filename, self.positions_file, self.index_attributes)
+            self.map_positions()
             self.create_blocks()
 
     def save(self):
@@ -41,6 +41,13 @@ class Index:
     def load(self):
         with open(self.source_filename + ".config", "rb") as file:
             self.number_documents, self.n_blocks = struct.unpack("@ii", file.read(struct.calcsize("@ii")))
+
+    def map_positions(self):
+        with open(self.source_filename, "r") as source_file, open(self.positions_file, "wb") as positions:
+            while source_file.readline() != "":
+                physical_pos = source_file.tell()
+                print("writing: ", physical_pos)
+                positions.write(struct.pack("@i", physical_pos))
 
     def _read_block(self, pos: int) -> dict:
         with open(self.index_path + f"/{pos}.block", "rb") as f:
@@ -61,6 +68,7 @@ class Index:
         
         mid = (l + u) // 2
         block = self._read_block(mid)
+        print(block)
         if term == list(block)[0] : 
             # Case 1
             return block[term] + self._check_block(term, mid - 1, self.UP)
@@ -164,7 +172,8 @@ class Index:
             for keyword, dic in block.items():
                 for doc_id, tf_idf in dic.items():
                     block[keyword][doc_id] = tf_idf / self._get_norm(doc_id)
-            block = list(block.items())
+            for k, v in block.items():
+                block[k] = list(v.items())
             write_block_to_disk(block, block_id, self.index_path)
 
     def _print_blocks(self) -> None:
@@ -194,11 +203,18 @@ class Index:
 
         self._print_blocks()
 
+    def retrieve_document(self, logical_pos: int) -> None:
+        with open(self.source_filename) as csv, open(self.positions_file, "rb") as pos:
+            pos.seek((logical_pos-1)*struct.calcsize("@i"))
+            physical_pos = struct.unpack("@i", pos.read(struct.calcsize("@i")))[0]
+            print(physical_pos)
+            csv.seek(physical_pos)
+            line = csv.readline()
+            return line
     def retrieval(self, query: str, k: int) -> list:
         result = dict()
 
         for term, tf in self.preprocess.preprocess_text(query).items():
-            print(self.n_blocks)
             docs = self._binary_search(term, 1, self.n_blocks)
             if len(docs) != 0:
                 idf = self._calculate_idf(len(docs))
@@ -206,16 +222,16 @@ class Index:
                     val         =   result.get(doc, 0)
                     val         +=  tf_idf*tf*idf
                     result[doc] =   val
-
+                    print(self.retrieve_document(doc))
         return sorted(result.items(), key=lambda t: t[1])[:k]
     
 
 x = set()
-x.add("track_artist")
-# index = Index("./CSV/test.csv",x)
-# index.process_source_file()
-# index.create_blocks()
-
+# x.add("track_artist")
+# x.add("track_name")
+x.add("lyrics")
+# index = Index("./CSV/test.csv", x)
+# index.save()
 # with open("CSV/test.csv.position", "rb") as f:
 #     import struct 
 #     while True:
@@ -223,4 +239,4 @@ x.add("track_artist")
 #         print(t)
 i = Index("./CSV/test.csv")
 i.load()
-i.retrieval("aa", 1)
+print(i.retrieval("Nang ako", 1))
