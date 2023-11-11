@@ -16,7 +16,7 @@ class Index:
     UP: bool = False
     DOWN: bool = True
 
-    def __init__(self, _source_filename: str, _index_attributes: set = None) -> None:
+    def __init__(self, _source_filename: str, _index_attributes: set) -> None:
         self.number_documents: int      = 0
         self.source_filename            = _source_filename
         self.processed_source_filename  = _source_filename + ".processed"
@@ -68,7 +68,6 @@ class Index:
         
         mid = (l + u) // 2
         block = self._read_block(mid)
-        print(block)
         if term == list(block)[0] : 
             # Case 1
             return block[term] + self._check_block(term, mid - 1, self.UP)
@@ -82,7 +81,7 @@ class Index:
             # Caso 4
             return self._binary_search(term, mid+1, u)
         else : 
-            return block.get(term, []) + self._check_block(term, mid - 1, self.UP) + self._check_block(term, mid + 1, self.DOWN) if (len(block) == 1) else []
+            return block.get(term, []) + (self._check_block(term, mid - 1, self.UP) + self._check_block(term, mid + 1, self.DOWN) if (len(block) == 1) else [])
 
 
     def _get_df(self, term: str, block_id: int) -> int:
@@ -221,18 +220,26 @@ class Index:
 
 
     def retrieve_document(self, logical_pos: int) -> None:
+        """
+        Return the first attribute of the corresponding row in the csv file source
+        """
         with open(self.source_filename) as csv, open(self.positions_file, "rb") as pos:
             pos.seek((logical_pos-1)*struct.calcsize("@i"))
             physical_pos = struct.unpack("@i", pos.read(struct.calcsize("@i")))[0]
             print(physical_pos)
             csv.seek(physical_pos)
             line = csv.readline()
-            return line
-    def retrieval(self, query: str, k: int) -> list:
+            return line.split(",")[0]
+        
+    def retrieval(self, query: str, k: int) -> list[tuple(str, float)]:
+        """
+        Returns at most k similar documents in descending order
+        """
         result = dict()
-
+        # self._print_blocks()
         for term, tf in self.preprocess.preprocess_text(query).items():
             docs = self._binary_search(term, 1, self.n_blocks)
+            # print(docs)
             if len(docs) != 0:
                 idf = self._calculate_idf(len(docs))
                 for doc, tf_idf in docs:
@@ -240,14 +247,15 @@ class Index:
                     val         +=  tf_idf*tf*idf
                     result[doc] =   val
                     print(self.retrieve_document(doc))
-        return sorted(result.items(), key=lambda t: t[1])[:k]
+        
+        return list(map(lambda x: (self.retrieve_document(x[0]), x[1]), sorted(result.items(), key=lambda t: t[1])[:k]))
     
 
 x = set()
 # x.add("track_artist")
 x.add("track_name")
 # x.add("lyrics")
-index = Index("./CSV/test.csv", x)
+# index = Index("./CSV/test.csv", x)
 # index = Index("./CSV/spotify_songs.csv", x)
 # index.save()
 # with open("CSV/test.csv.position", "rb") as f:
@@ -255,6 +263,6 @@ index = Index("./CSV/test.csv", x)
 #     while True:
 #         t = struct.unpack("i",f.read(struct.calcsize("i")))
 #         print(t)
-i = Index("./CSV/test.csv")
+i = Index("./CSV/test.csv", x)
 i.load()
 print(i.retrieval("pangarap", 1))
