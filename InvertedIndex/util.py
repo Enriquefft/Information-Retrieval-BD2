@@ -52,10 +52,8 @@ def write_block_to_disk(block: Block, index: int, path: str) -> None:
             pickle.dump(block, file)
 
 def free_memory_available(d) -> bool:
-        #if len(d) < 4:
         return len(d) < 4
-        #if d.__sizeof__() < :
-        #return d.__sizeof__() >> 12 == 0
+        # return d.__sizeof__() >> 12 == 0
 
 def sort_terms(dictionary) -> dict[int, int]:
     return dict(sorted(dictionary.items(), key=lambda x: x[0], reverse=False))
@@ -73,10 +71,12 @@ def Merge(number_of_blocks: int, path: str) -> int:
     n = MergeSortBlocks(1, nearest_power_two(number_of_blocks), path, 1)
     for i in range(n+1, number_of_blocks+1):
         remove_block(i, path)
+
     # Swap name between original block dir and block1 dir 
-    os.rename("blocks","x")
-    os.rename("0_blocks","blocks")
-    os.rename("x","0_blocks")
+    if os.path.exists("0_blocks"):
+        os.rename("blocks","x")
+        os.rename("0_blocks","blocks")
+        os.rename("x","0_blocks")
 
     return n
 
