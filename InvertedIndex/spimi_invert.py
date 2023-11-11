@@ -1,5 +1,5 @@
-from preprocessor import Preprocessor
-from util import free_memory_available, sort_terms, write_block_to_disk
+from .preprocessor import Preprocessor
+from .util import free_memory_available, sort_terms, write_block_to_disk
 
 DEBUG = True
 

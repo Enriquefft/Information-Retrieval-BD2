@@ -1,16 +1,11 @@
-import csv
 import pickle
 import struct
-from spimi_invert import SpimiInvert
-from preprocessor import Preprocessor
-from util import write_block_to_disk
+from .spimi_invert import SpimiInvert
+from .preprocessor import Preprocessor
+from .util import write_block_to_disk, Merge, load_block, Block
 import numpy as np
-
 import math
-
 from os import path
-
-from util import Merge, load_block, Block
 
 class Index:
     UP: bool = False
@@ -226,43 +221,40 @@ class Index:
         with open(self.source_filename) as csv, open(self.positions_file, "rb") as pos:
             pos.seek((logical_pos-1)*struct.calcsize("@i"))
             physical_pos = struct.unpack("@i", pos.read(struct.calcsize("@i")))[0]
-            print(physical_pos)
+            # print(physical_pos)
             csv.seek(physical_pos)
             line = csv.readline()
             return line.split(",")[0]
         
-    def retrieval(self, query: str, k: int) -> list[tuple(str, float)]:
+    def retrieval(self, query: str, k: int) -> list[tuple[str, float]]:
         """
         Returns at most k similar documents in descending order
         """
         result = dict()
-        # self._print_blocks()
         for term, tf in self.preprocess.preprocess_text(query).items():
             docs = self._binary_search(term, 1, self.n_blocks)
-            # print(docs)
             if len(docs) != 0:
                 idf = self._calculate_idf(len(docs))
                 for doc, tf_idf in docs:
                     val         =   result.get(doc, 0)
                     val         +=  tf_idf*tf*idf
                     result[doc] =   val
-                    print(self.retrieve_document(doc))
         
         return list(map(lambda x: (self.retrieve_document(x[0]), x[1]), sorted(result.items(), key=lambda t: t[1])[:k]))
     
 
-x = set()
-# x.add("track_artist")
-x.add("track_name")
-# x.add("lyrics")
-# index = Index("./CSV/test.csv", x)
-# index = Index("./CSV/spotify_songs.csv", x)
-# index.save()
-# with open("CSV/test.csv.position", "rb") as f:
-#     import struct 
-#     while True:
-#         t = struct.unpack("i",f.read(struct.calcsize("i")))
-#         print(t)
-i = Index("./CSV/test.csv", x)
-i.load()
-print(i.retrieval("pangarap", 1))
+# x = set()
+# # x.add("track_artist")
+# x.add("track_name")
+# # x.add("lyrics")
+# # index = Index("./CSV/test.csv", x)
+# # index = Index("./CSV/spotify_songs.csv", x)
+# # index.save()
+# # with open("CSV/test.csv.position", "rb") as f:
+# #     import struct 
+# #     while True:
+# #         t = struct.unpack("i",f.read(struct.calcsize("i")))
+# #         print(t)
+# i = Index("./CSV/test.csv", x)
+# i.load()
+# print(i.retrieval("pangarap", 1))
