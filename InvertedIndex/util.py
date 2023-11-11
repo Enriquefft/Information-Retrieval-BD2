@@ -7,6 +7,7 @@ import math
 
 Block: typing.TypeAlias = dict[str, dict[int, int]]
 MAX_BLOCK_SIZE = 100 # Bytes
+EPSILON = 2
 
 class MinHeap:
     def __init__(self):
@@ -44,15 +45,17 @@ def remove_block(index: int, path: str) -> None:
         raise Exception(f"Block {path}/{index}.block does not exits")
     
 def write_block_to_disk(block: Block, index: int, path: str) -> None:
+        if len(block) == 0:
+            return
         os.makedirs(path, exist_ok=True)
         with open(f"{path}/{index}.block", 'wb') as file:
             pickle.dump(block, file)
 
 def free_memory_available(d) -> bool:
-        if len(d) < 4:
-            return True
-        else:
-            return False
+        #if len(d) < 4:
+        return len(d) < 4
+        #if d.__sizeof__() < :
+        #return d.__sizeof__() >> 12 == 0
 
 def sort_terms(dictionary) -> dict[int, int]:
     return dict(sorted(dictionary.items(), key=lambda x: x[0], reverse=False))
@@ -74,6 +77,8 @@ def Merge(number_of_blocks: int, path: str) -> int:
     os.rename("blocks","x")
     os.rename("0_blocks","blocks")
     os.rename("x","0_blocks")
+
+    return n
 
 
 def MergeSortBlocks(p: int, r: int, path: str, level: int) -> int:
@@ -137,7 +142,9 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
             # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
             # but for now we will use the lenght of the block
             if not free_memory_available(output):
-                write_block_to_disk(output, k, writing_path)
+                if len(output) > 0:
+                    write_block_to_disk(output, k, writing_path)
+                
                 output.clear()
                 k += 1
 
@@ -168,14 +175,20 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
     while i <= q1:
         if heap.size() == 0:
             input1 = load_block(i, reading_path)
+            if len(input1) == 0:
+                i = i + 1
+                continue
             heap.push_dict(input1, i)
         
         size1: int = heap.size()
         count1: int = 0
 
+        # print("size1: ", size1)
+        # print("q1", q1)
+
         while heap.size() > 0:
             key, value, idinput = heap.pop()
-            
+
             if output.get(key) is None:
                 output[key] = value
             else:
@@ -184,7 +197,8 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
             # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
             # but for now we will use the lenght of the block
             if not free_memory_available(output):
-                write_block_to_disk(output, k, writing_path)
+                if len(output) > 0:
+                    write_block_to_disk(output, k, writing_path)
                 output.clear()
                 k += 1
 
@@ -198,11 +212,17 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
                 heap.push_dict(input1, i)
                 count1 = 0
                 size1 = len(input1)
+        
+        # break
 
 
     while j <= r:
+        # print("j: ", j)
         if heap.size() == 0:
             input2 = load_block(j, reading_path)
+            if len(input2) == 0:
+                j = j + 1
+                continue
             heap.push_dict(input2, j)
 
         size2: int = heap.size()
@@ -219,7 +239,8 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
             # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
             # but for now we will use the lenght of the block
             if not free_memory_available(output):
-                write_block_to_disk(output, k, writing_path)
+                if len(output) > 0:
+                    write_block_to_disk(output, k, writing_path)
                 output.clear()
                 k += 1
             
@@ -233,6 +254,8 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
                 heap.push_dict(input2, j)
                 count2 = 0
                 size2 = len(input2)
+            
+        # break
     
     if len(output) > 0:
         write_block_to_disk(output, k, writing_path)

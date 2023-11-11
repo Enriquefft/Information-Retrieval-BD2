@@ -3,3 +3,4 @@ spotify_songs.csv
 spotify_songs.csv.processed
 blocks
 venv
+.vscode

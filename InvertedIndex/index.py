@@ -41,7 +41,6 @@ class Index:
         with open(self.source_filename, "r") as source_file, open(self.positions_file, "wb") as positions:
             while source_file.readline() != "":
                 physical_pos = source_file.tell()
-                print("writing: ", physical_pos)
                 positions.write(struct.pack("@i", physical_pos))
 
     def _read_block(self, pos: int) -> dict:
@@ -96,7 +95,6 @@ class Index:
         df: dict[str, int] = dict()
         for block_id in range(1, self.n_blocks + 1):
             block: Block = load_block(block_id, self.index_path)
-            print(block, block_id)
             for term, dic in block.items():
                 if term not in df:
                     df.clear()
@@ -104,7 +102,6 @@ class Index:
                 for doc_id, tf in dic.items():
                     idf = np.log10(self.number_documents / df[term])
                     block[term][doc_id] = tf * idf
-            print(block, block_id)
             write_block_to_disk(block, block_id, self.index_path)
             
 
@@ -189,30 +186,19 @@ class Index:
         n_blocks, path = spimi.create_blocks()
         self.n_blocks = n_blocks
 
-        self._print_blocks()
+        # self._print_blocks()
 
-        Merge(n_blocks, path)
+        self.n_blocks = Merge(n_blocks, path)
 
-        self._print_blocks()
-
-        print()
+        # self._print_blocks()
 
         self._tf_idf_init()
 
-        print()
-        self._print_blocks()
-        
         self._compute_norms()
-
-        print()
-        self._print_blocks()
 
         self._normalize()
 
-        print()
-        self._print_blocks()
-
-
+        # self._print_blocks()
 
     def retrieve_document(self, logical_pos: int) -> None:
         """
@@ -221,7 +207,6 @@ class Index:
         with open(self.source_filename) as csv, open(self.positions_file, "rb") as pos:
             pos.seek((logical_pos-1)*struct.calcsize("@i"))
             physical_pos = struct.unpack("@i", pos.read(struct.calcsize("@i")))[0]
-            # print(physical_pos)
             csv.seek(physical_pos)
             line = csv.readline()
             return line.split(",")[0]
@@ -240,7 +225,7 @@ class Index:
                     val         +=  tf_idf*tf*idf
                     result[doc] =   val
         
-        return list(map(lambda x: (self.retrieve_document(x[0]), x[1]), sorted(result.items(), key=lambda t: t[1])[:k]))
+        return list(map(lambda x: (self.retrieve_document(x[0]), x[1]), sorted(result.items(), key=lambda t: t[1], reverse=True)[:k]))
     
 
 # x = set()

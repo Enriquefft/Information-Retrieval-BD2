@@ -1,4 +1,4 @@
-from index import Index
+""" from index import Index
 
 attributes = set()
 attributes.add("track_name")
@@ -42,4 +42,25 @@ expected_result = [
     "q": {4: 1},
     "s": {5: 1, 7: 2},
     },
-]
+] """
+import pickle
+a =dict()
+
+for i in range(1, 1000):
+    a[i] = i
+    print(a.__sizeof__())
+
+print(a.__sizeof__())
+
+data = pickle.dumps(a)
+
+print(data.__sizeof__())
+
+with open("test_dict", "wb") as file:
+    file.write(data)
+
+
+with open("test_dict", "rb") as file:
+    data = file.read()
+    b = pickle.loads(data)
+    print(b.__sizeof__())

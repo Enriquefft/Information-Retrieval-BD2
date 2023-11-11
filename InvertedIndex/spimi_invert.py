@@ -19,9 +19,6 @@ class ReaderRaw:
                 while (not word.endswith(" ") and not (finish := word.endswith("\n"))):
                     word += (chunk := processed_file.read(1))
                     if (chunk == ''):
-                        print("Finished reading file")
-                        print("Last word: " + word)
-                        
                         return
                 for token in self.preprocessor.preprocess_word(word):  
                     yield (token, id)
