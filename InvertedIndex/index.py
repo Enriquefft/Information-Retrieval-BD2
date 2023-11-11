@@ -102,6 +102,7 @@ class Index:
         df: dict[str, int] = dict()
         for block_id in range(1, self.n_blocks + 1):
             block: Block = load_block(block_id, self.index_path)
+            print(block, block_id)
             for term, dic in block.items():
                 if term not in df:
                     df.clear()
@@ -109,6 +110,7 @@ class Index:
                 for doc_id, tf in dic.items():
                     idf = np.log10(self.number_documents / df[term])
                     block[term][doc_id] = tf * idf
+            print(block, block_id)
             write_block_to_disk(block, block_id, self.index_path)
             
 
@@ -173,7 +175,7 @@ class Index:
                 for doc_id, tf_idf in dic.items():
                     block[keyword][doc_id] = tf_idf / self._get_norm(doc_id)
             for k, v in block.items():
-                block[k] = list(v.items())
+                block[k] = sorted(list(v.items()))
             write_block_to_disk(block, block_id, self.index_path)
 
     def _print_blocks(self) -> None:
@@ -192,16 +194,31 @@ class Index:
         
         n_blocks, path = spimi.create_blocks()
         self.n_blocks = n_blocks
-        
+
+        self._print_blocks()
+
         Merge(n_blocks, path)
 
+        self._print_blocks()
+
+        print()
+
         self._tf_idf_init()
+
+        print()
+        self._print_blocks()
         
         self._compute_norms()
 
+        print()
+        self._print_blocks()
+
         self._normalize()
 
+        print()
         self._print_blocks()
+
+
 
     def retrieve_document(self, logical_pos: int) -> None:
         with open(self.source_filename) as csv, open(self.positions_file, "rb") as pos:
@@ -228,9 +245,10 @@ class Index:
 
 x = set()
 # x.add("track_artist")
-# x.add("track_name")
-x.add("lyrics")
-# index = Index("./CSV/test.csv", x)
+x.add("track_name")
+# x.add("lyrics")
+index = Index("./CSV/test.csv", x)
+# index = Index("./CSV/spotify_songs.csv", x)
 # index.save()
 # with open("CSV/test.csv.position", "rb") as f:
 #     import struct 
@@ -239,4 +257,4 @@ x.add("lyrics")
 #         print(t)
 i = Index("./CSV/test.csv")
 i.load()
-print(i.retrieval("Nang ako", 1))
+print(i.retrieval("pangarap", 1))

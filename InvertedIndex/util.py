@@ -2,6 +2,8 @@ import pickle
 import os
 import typing
 import heapq
+import random
+import math
 
 Block: typing.TypeAlias = dict[str, dict[int, int]]
 MAX_BLOCK_SIZE = 100 # Bytes
@@ -12,7 +14,7 @@ class MinHeap:
         self.sz = 0
     
     def push(self, key: str, value: dict[int, int], index: int) -> None:
-        heapq.heappush(self.data, (key, self.sz, value, index))
+        heapq.heappush(self.data, (key, random.randint(-99999999,99999999), value, index))
         self.sz += 1
     
     def pop(self) -> tuple[str, dict[int, int], int]:
@@ -24,7 +26,7 @@ class MinHeap:
 
     def push_dict(self, dic: dict[int, int], index: int) -> None:
         for (key, value) in dic.items():
-            heapq.heappush(self.data, (key, self.sz, value, index))
+            heapq.heappush(self.data, (key, random.randint(-99999999,99999999), value, index))
             self.sz += 1
 
 # Load the block if exists
@@ -55,14 +57,26 @@ def free_memory_available(d) -> bool:
 def sort_terms(dictionary) -> dict[int, int]:
     return dict(sorted(dictionary.items(), key=lambda x: x[0], reverse=False))
 
+def nearest_power_two(n):
+    # Encontrar la potencia de dos más cercana
+    potencia = 0
+    while 2 ** potencia < n:
+        potencia += 1
+
+    # Devolver la potencia de dos más cercana por arriba
+    return 2 ** potencia
 
 def Merge(number_of_blocks: int, path: str) -> int:
-    n = MergeSortBlocks(1, number_of_blocks, path)
+    n = MergeSortBlocks(1, nearest_power_two(number_of_blocks), path, 1)
     for i in range(n+1, number_of_blocks+1):
         remove_block(i, path)
-        
+    # Swap name between original block dir and block1 dir 
+    os.rename("blocks","x")
+    os.rename("0_blocks","blocks")
+    os.rename("x","0_blocks")
 
-def MergeSortBlocks(p: int, r: int, path: str) -> int:
+
+def MergeSortBlocks(p: int, r: int, path: str, level: int) -> int:
     """
         p: fisrt index block, 
         r: last index block,
@@ -71,23 +85,33 @@ def MergeSortBlocks(p: int, r: int, path: str) -> int:
     """
     if p < r:
         q: int = (p + r - 1) // 2
-        k1: int = MergeSortBlocks(p, q, path)
-        k2: int = MergeSortBlocks(q+1, r, path)
-        n: int = MergeBlocks(p, k1, q+1, k2, path)
+        k1: int = MergeSortBlocks(p, q, path, level+1)
+        k2: int = MergeSortBlocks(q+1, r, path, level+1)
+        n: int = MergeBlocks(p, k1, q+1, k2, path, level)
         return n
     
     return r
 
 
-def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str) -> int:
+def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
 
     i = p   # Index for the first array of blocks [p:q]
     j = q2 # Index for the second array of blocks [q+1:r]
     k = p   # Index for the output block
 
+
+    writing_path = str(level-1) + "_" + path
+    reading_path = ""
+    
+    # if level == math.log2(4):
+    if q1 - p + 1 <= 1:
+        reading_path = path
+    else:
+        reading_path = str(level) + "_" + path
+
     output: Block = {}
-    input1: Block = load_block(i, path) # First input (blocks [p to q])
-    input2: Block = load_block(j, path) # Second input (blocks [q+1 to r])
+    input1: Block = load_block(i, reading_path) # First input (blocks [p to q])
+    input2: Block = load_block(j, reading_path) # Second input (blocks [q+1 to r])
 
     heap = MinHeap()
 
@@ -113,7 +137,7 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str) -> int:
             # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
             # but for now we will use the lenght of the block
             if not free_memory_available(output):
-                write_block_to_disk(output, k, path)
+                write_block_to_disk(output, k, writing_path)
                 output.clear()
                 k += 1
 
@@ -126,7 +150,7 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str) -> int:
                 i = i + 1
 
                 if i > q1: break
-                input1 = load_block(i, path)
+                input1 = load_block(i, reading_path)
                 heap.push_dict(input1, i)
                 count1 = 0
                 size1 = len(input1)
@@ -135,14 +159,15 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str) -> int:
                 j = j + 1
 
                 if j > r: break
-                input2 = load_block(j, path)
+                input2 = load_block(j, reading_path)
                 heap.push_dict(input2, j)
                 count2 = 0
                 size2 = len(input2)
+        break
 
     while i <= q1:
         if heap.size() == 0:
-            input1 = load_block(i, path)
+            input1 = load_block(i, reading_path)
             heap.push_dict(input1, i)
         
         size1: int = heap.size()
@@ -159,7 +184,7 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str) -> int:
             # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
             # but for now we will use the lenght of the block
             if not free_memory_available(output):
-                write_block_to_disk(output, k, path)
+                write_block_to_disk(output, k, writing_path)
                 output.clear()
                 k += 1
 
@@ -169,7 +194,7 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str) -> int:
                 i = i + 1
 
                 if i > q1: break
-                input1 = load_block(i, path)
+                input1 = load_block(i, reading_path)
                 heap.push_dict(input1, i)
                 count1 = 0
                 size1 = len(input1)
@@ -177,7 +202,7 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str) -> int:
 
     while j <= r:
         if heap.size() == 0:
-            input2 = load_block(j, path)
+            input2 = load_block(j, reading_path)
             heap.push_dict(input2, j)
 
         size2: int = heap.size()
@@ -194,7 +219,7 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str) -> int:
             # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
             # but for now we will use the lenght of the block
             if not free_memory_available(output):
-                write_block_to_disk(output, k, path)
+                write_block_to_disk(output, k, writing_path)
                 output.clear()
                 k += 1
             
@@ -204,13 +229,13 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str) -> int:
                 j = j + 1
 
                 if j > r: break
-                input2 = load_block(j, path)
+                input2 = load_block(j, reading_path)
                 heap.push_dict(input2, j)
                 count2 = 0
                 size2 = len(input2)
     
     if len(output) > 0:
-        write_block_to_disk(output, k, path)
+        write_block_to_disk(output, k, writing_path)
         k += 1
     
     return k - 1
