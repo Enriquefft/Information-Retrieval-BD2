@@ -50,7 +50,7 @@ class SpimiInvert:
 
         for token, doc_id in self.reader.reader():
             if not free_memory_available(self.dictionary):
-                sort_terms(self.dictionary)
+                self.dictionary = sort_terms(self.dictionary)
                 write_block_to_disk(self.dictionary, self.number_blocks, path)
                 self.dictionary.clear()
                 self.number_blocks += 1
@@ -61,7 +61,7 @@ class SpimiInvert:
             tmp[doc_id] = count
             self.dictionary[token] = tmp
 
-        sort_terms(self.dictionary)
+        self.dictionary = sort_terms(self.dictionary)
         write_block_to_disk(self.dictionary, self.number_blocks, path)
         self.dictionary.clear()
         return (self.number_blocks, "blocks/")
