@@ -186,19 +186,13 @@ class Index:
         n_blocks, path = spimi.create_blocks()
         self.n_blocks = n_blocks
 
-        # self._print_blocks()
-
         self.n_blocks = Merge(n_blocks, path)
-
-        # self._print_blocks()
 
         self._tf_idf_init()
 
         self._compute_norms()
 
         self._normalize()
-
-        # self._print_blocks()
 
     def retrieve_document(self, logical_pos: int) -> None:
         """
@@ -226,20 +220,3 @@ class Index:
                     result[doc] =   val
         
         return list(map(lambda x: (self.retrieve_document(x[0]), x[1]), sorted(result.items(), key=lambda t: t[1], reverse=True)[:k]))
-    
-
-# x = set()
-# # x.add("track_artist")
-# x.add("track_name")
-# # x.add("lyrics")
-# # index = Index("./CSV/test.csv", x)
-# # index = Index("./CSV/spotify_songs.csv", x)
-# # index.save()
-# # with open("CSV/test.csv.position", "rb") as f:
-# #     import struct 
-# #     while True:
-# #         t = struct.unpack("i",f.read(struct.calcsize("i")))
-# #         print(t)
-# i = Index("./CSV/test.csv", x)
-# i.load()
-# print(i.retrieval("pangarap", 1))
