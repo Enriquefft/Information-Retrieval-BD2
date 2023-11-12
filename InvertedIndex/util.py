@@ -52,8 +52,8 @@ def write_block_to_disk(block: Block, index: int, path: str) -> None:
             pickle.dump(block, file)
 
 def free_memory_available(d) -> bool:
-        return len(d) < 4
-        # return d.__sizeof__() >> 12 == 0
+        # return len(d) < 4
+        return d.__sizeof__() >> 12 == 0
 
 def sort_terms(dictionary) -> dict[int, int]:
     return dict(sorted(dictionary.items(), key=lambda x: x[0], reverse=False))
@@ -66,6 +66,14 @@ def nearest_power_two(n):
 
     # Devolver la potencia de dos más cercana por arriba
     return 2 ** potencia
+
+def addToDict(output: Block, key: str, dic: dict[int, int]):
+    for doc_id in dic:
+        if output[key].get(doc_id) is None:
+           output[key][doc_id] = dic[doc_id]
+        else:
+            output[key][doc_id] += dic[doc_id]
+    return output
 
 def Merge(number_of_blocks: int, path: str) -> int:
     n = MergeSortBlocks(1, nearest_power_two(number_of_blocks), path, 1)
@@ -137,7 +145,8 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
             if output.get(key) is None:
                 output[key] = value
             else:
-                output[key].update(value)
+                # output[key].update(value)
+                output = addToDict(output, key, value)
 
             # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
             # but for now we will use the lenght of the block
@@ -175,16 +184,13 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
     while i <= q1:
         if heap.size() == 0:
             input1 = load_block(i, reading_path)
-            if len(input1) == 0:
+            """ if len(input1) == 0:
                 i = i + 1
-                continue
+                continue """
             heap.push_dict(input1, i)
         
         size1: int = heap.size()
         count1: int = 0
-
-        # print("size1: ", size1)
-        # print("q1", q1)
 
         while heap.size() > 0:
             key, value, idinput = heap.pop()
@@ -192,7 +198,8 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
             if output.get(key) is None:
                 output[key] = value
             else:
-                output[key].update(value)
+                #output[key].update(value)
+                output = addToDict(output, key, value)
 
             # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
             # but for now we will use the lenght of the block
@@ -213,16 +220,15 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
                 count1 = 0
                 size1 = len(input1)
         
-        # break
+        break
 
 
     while j <= r:
-        # print("j: ", j)
         if heap.size() == 0:
             input2 = load_block(j, reading_path)
-            if len(input2) == 0:
+            """ if len(input2) == 0:
                 j = j + 1
-                continue
+                continue """
             heap.push_dict(input2, j)
 
         size2: int = heap.size()
@@ -234,7 +240,8 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
             if output.get(key) is None:
                 output[key] = value
             else:
-                output[key].update(value)
+                #output[key].update(value)
+                output = addToDict(output, key, value)
 
             # We must use output.__sizeof__() < FREE_MEMORY_AVAILABLE
             # but for now we will use the lenght of the block
@@ -255,7 +262,7 @@ def MergeBlocks(p: int, q1: int, q2: int, r: int, path: str, level: int) -> int:
                 count2 = 0
                 size2 = len(input2)
             
-        # break
+        break
     
     if len(output) > 0:
         write_block_to_disk(output, k, writing_path)
