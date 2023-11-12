@@ -9,7 +9,7 @@ class TestInvertIndex(unittest.TestCase):
         self.csv_file = "./tests/data/test.csv"
         self.attr = set()
 
-    
+
     def test_create_1_attribute_query_track_name_partial(self):
         self.attr.add("track_name")
         i = Index(self.csv_file, self.attr)
@@ -26,7 +26,7 @@ class TestInvertIndex(unittest.TestCase):
 
         self.assertEqual(i.retrieval("cold outside", 1)[0][0], "00cqd6ZsSkLZqGMlQCR0Zo")
         self.assertEqual(i.retrieval("Biv", 1)[0][0], "00chLpzhgVjxs1zKC9UScL") 
-   
+    
     def test_create_3_same_attributes(self):
         self.attr.add("track_name")
         self.attr.add("lyrics")
@@ -43,7 +43,7 @@ class TestInvertIndex(unittest.TestCase):
         self.assertEqual(query2[0][0], "00chLpzhgVjxs1zKC9UScL")
         self.assertEqual(query2[1][0], "004s3t0ONYlzxII9PLgU6z")
         self.assertEqual(query2[2][0], "00cqd6ZsSkLZqGMlQCR0Zo") 
-
+   
     def test_create_3_different_attributes(self):
         self.attr.add("track_name")
         self.attr.add("lyrics")
@@ -53,7 +53,7 @@ class TestInvertIndex(unittest.TestCase):
         self.assertGreater(i.n_blocks, 0)
         self.assertGreater(i.number_documents, 0)
 
-        query = i.retrieval("Nang Minsan Hindi ko alam Na ika'y tutugon Christina Aguilera baby cold Bell Biv", 3)
+        query = i.retrieval("sandali ang Hindi ko alam ika'y Christina Aguilera baby cold Bell Biv", 3)
         self.assertEqual(query[0][0], "0017A6SJgTbfQVU2EtsPNo")
         self.assertEqual(query[1][0], "00cqd6ZsSkLZqGMlQCR0Zo")
         self.assertEqual(query[2][0], "00chLpzhgVjxs1zKC9UScL") 
@@ -87,6 +87,20 @@ class TestInvertIndex(unittest.TestCase):
 
         query = i.retrieval("Baby It's Cold Outside (feat. Christina Aguilera)", 1)
         self.assertEqual(query[0][0], "00cqd6ZsSkLZqGMlQCR0Zo")
+   
+    def test_create_4_attribute_query_lyrics_subgenre(self):
+        self.attr.add("track_name")
+        self.attr.add("lyrics")
+        self.attr.add("track_artist")
+        self.attr.add("playlist_subgenre")
+
+        i = Index(self.csv_file, self.attr)
+        self.assertGreater(i.n_blocks, 0)
+        self.assertGreater(i.number_documents, 0)
+
+        query = i.retrieval("rock and roll dance", 1)
+        self.assertEqual(query[0][0], "004s3t0ONYlzxII9PLgU6z")
+   
 
     def tearDown(self) -> None:
         self.attr.clear()
