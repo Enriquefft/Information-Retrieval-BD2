@@ -7,12 +7,15 @@ import numpy as np
 import math
 from os import path
 
+from typing import Final, TextIO, BinaryIO, cast
+
 
 class Index:
-    UP: bool = False
-    DOWN: bool = True
+    UP: Final[bool] = False
+    DOWN: Final[bool] = True
 
-    def __init__(self, _source_filename: str, _index_attributes: set) -> None:
+    def __init__(self, _source_filename: str,
+                 _index_attributes: set[str]) -> None:
         self.number_documents: int = 0
         self.source_filename = _source_filename
         self.processed_source_filename = _source_filename + ".processed"
@@ -32,17 +35,17 @@ class Index:
             self.map_positions()
             self.create_blocks()
 
-    def save(self):
+    def save(self) -> None:
         with open(self.source_filename + ".config", "wb") as file:
             file.write(struct.pack("@ii", self.number_documents,
                                    self.n_blocks))
 
-    def load(self):
+    def load(self) -> None:
         with open(self.source_filename + ".config", "rb") as file:
             self.number_documents, self.n_blocks = struct.unpack(
                 "@ii", file.read(struct.calcsize("@ii")))
 
-    def map_positions(self):
+    def map_positions(self) -> None:
         with open(self.source_filename,
                   "r") as source_file, open(self.positions_file,
                                             "wb") as positions:
@@ -50,7 +53,7 @@ class Index:
                 physical_pos = source_file.tell()
                 positions.write(struct.pack("@i", physical_pos))
 
-    def _read_block(self, pos: int) -> dict:
+    def _read_block(self, pos: int):
         with open(self.index_path + f"/{pos}.block", "rb") as f:
             return pickle.load(f)
 
@@ -125,12 +128,13 @@ class Index:
             file.write(norm)
         file.close()
 
-    def _read_load_norm(self, file, size: int) -> float:
+    def _read_load_norm(self, file: BinaryIO, size: int) -> float:
         norm = file.read(size)
-        return struct.unpack('f', norm)[0]
+        return cast(float, struct.unpack('f', norm)[0])
 
-    def _write_norm(self, file, size: int, doc_id: int, norm: float) -> None:
-        norm = struct.pack('f', norm)
+    def _write_norm(self, file: BinaryIO, size: int, doc_id: int,
+                    norm: float) -> None:
+        norm_b: bytes = struct.pack('f', norm)
         file.seek((doc_id - 1) * size)
         file.write(norm)
 
@@ -161,10 +165,11 @@ class Index:
                 self._write_norm(file, float_bytes_size, doc_id, norm_doc)
 
     def _get_norm(self, doc_id: int) -> float:
+        file: BinaryIO
         with open(self.norms_filename, "rb+") as file:
             file.seek((doc_id - 1) * 4)
             norm_doc = file.read(4)
-            return struct.unpack('f', norm_doc)[0]
+            return cast(float, struct.unpack('f', norm_doc)[0])
 
     def _normalize(self) -> None:
         for block_id in range(1, self.n_blocks + 1):
