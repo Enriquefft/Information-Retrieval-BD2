@@ -7,12 +7,12 @@ from psycopg2 import connect, extensions
 from psycopg2.extensions import connection, cursor
 
 from typing import Any, cast
-
+from os import getenv
 app = FastAPI()
 
 songs_index = SongsInvertedIndex()
 
-db: connection = connect(host='localhost', dbname='spotify')
+db: connection = connect(host=getenv("POSTGRES_HOST"), dbname="postgres", user=getenv("POSTGRES_USER") , password=getenv("POSTGRES_PASSWORD") )
 
 TracksInfo = list[tuple[str, float]]
 

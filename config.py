@@ -2,4 +2,4 @@
 from typing import Final
 from pathlib import Path
 
-CSV_PATH: Final[Path] = Path("CSV/test")
+CSV_PATH: Final[Path] = Path("CSV/spotify_songs.csv")

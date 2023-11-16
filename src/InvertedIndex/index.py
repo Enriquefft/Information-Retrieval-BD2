@@ -36,8 +36,9 @@ class Index:
             self.create_blocks()
 
     def save(self) -> None:
-        with open(self.source_filename + ".config", "wb") as file:
-            file.write(struct.pack("@ii", self.number_documents,
+        if not path.exists(self.source_filename + ".cofig"):
+            with open(self.source_filename + ".config", "wb") as file:
+                file.write(struct.pack("@ii", self.number_documents,
                                    self.n_blocks))
 
     def load(self) -> None:
@@ -134,7 +135,7 @@ class Index:
 
     def _write_norm(self, file: BinaryIO, size: int, doc_id: int,
                     norm: float) -> None:
-        norm_b: bytes = struct.pack('f', norm)
+        norm = struct.pack('f', norm)
         file.seek((doc_id - 1) * size)
         file.write(norm)
 

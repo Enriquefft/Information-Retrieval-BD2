@@ -13,7 +13,8 @@ class SongsInvertedIndex():
 
         attributes: set[str] = {"track_name", "track_artist", "lyrics"}
 
-        self.index: Index = Index(CSV_PATH, attributes)
+        self.index: Index = Index(str(CSV_PATH), attributes)
+        self.index.save()
         self.index.load()
 
     def search(self, keywords: str, k: int = 10) -> list[tuple[str, float]]:
