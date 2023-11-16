@@ -1,5 +1,5 @@
 from src.InvertedIndex.index import Index
-from config import CSV_PATH
+from .config import CSV_PATH
 
 
 class SongsInvertedIndex():

@@ -3,9 +3,6 @@ from fastapi import FastAPI
 
 from pydantic import BaseModel
 
-from psycopg2 import connect, extensions
-from psycopg2.extensions import connection, cursor
-
 from typing import Any, cast
 from os import getenv
 from dotenv import load_dotenv
@@ -15,7 +12,10 @@ app = FastAPI()
 
 songs_index = SongsInvertedIndex()
 
-db: connection = connect(host=getenv("POSTGRES_HOST"), dbname="postgres", user=getenv("POSTGRES_USER") , password=getenv("POSTGRES_PASSWORD") )
+db: connection = connect(host=getenv("POSTGRES_HOST"),
+                         dbname="postgres",
+                         user=getenv("POSTGRES_USER"),
+                         password=getenv("POSTGRES_PASSWORD"))
 
 TracksInfo = list[tuple[str, float]]
 
@@ -28,8 +28,8 @@ async def LocalText(keywords: str, k: int = 10) -> TracksInfo:
 @app.get("/postgres/text")
 async def PostgresText(keywords: str) -> TracksInfo:
 
-    db_cursor: cursor
-    with db.cursor() as db_cursor:
+    db_cursor: cursorT
+    with connection.cursor() as db_cursor:
         db_cursor.execute(
             """SELECT track_id FROM tracks WHERE to_tsvector('english', lyrics) @@ to_tsquery('english', %s);""",
             (keywords, ))

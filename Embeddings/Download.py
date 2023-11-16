@@ -25,12 +25,19 @@ BASE_OUTPUT_PATH: Final[Path] = Path("songs/")
 class Downloader():
     """Class for downloading a Spotify playlist."""
 
-    def __init__(self, playlist_id: str):
+    def __init__(self, playlist_id: Optional[str], userFavourites: bool):
         """Initialize a Downloader object."""
-        self.playlist_id: str = playlist_id
-        self.output_path: Path = BASE_OUTPUT_PATH / playlist_id
 
-    def get_songs(
+        if playlist_id is None and not userFavourites:
+            raise ValueError(
+                "Either playlist_id or userFavourites must be specified.")
+
+        self.playlist_id: str | None = playlist_id
+        self.userFavourites: bool = userFavourites
+        self.output_path: Path = BASE_OUTPUT_PATH / (playlist_id
+                                                     or 'favourites')
+
+    def get_songs_by_playlist(
             self) -> tuple[float, Generator[tuple[str, str], None, None]]:
         """Get a list of [trackid, songname] from a Spotify playlist."""
 
@@ -40,10 +47,19 @@ class Downloader():
                 (item['track']['id'], item['track']['name'])
                 for item in sp.playlist(self.playlist_id)['tracks']['items'])
 
+    def get_songs_by_favourites(
+            self) -> tuple[float, Generator[tuple[str, str], None, None]]:
+        """Get a list of [trackid, songname] from a Spotify playlist."""
+        return min(
+            (item['track']['duration_ms'])
+            for item in sp.playlist(self.playlist_id)['tracks']['items']), (
+                (item['track']['id'], item['track']['name'])
+                for item in sp.playlist(self.playlist_id)['tracks']['items'])
+
     def download_songs(self) -> Generator[str | float | None, None, None]:
         """Download a song b its name."""
 
-        min_duration, songs = self.get_songs()
+        min_duration, songs = self.get_songs_by_playlist()
         yield min_duration
 
         for song in songs:
