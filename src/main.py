@@ -1,7 +1,9 @@
+from src.song_index import SongsInvertedIndex
 from fastapi import FastAPI
 
 app = FastAPI()
 
+songs_index = SongsInvertedIndex()
 
 mock_data = [
     {
@@ -33,9 +35,13 @@ mock_data = [
     }
 ] * 100000000
 
-@app.get("/search")
+@app.get("/postgres_search")
 async def search(keywords: str, k: int = 10):
     return {"result": mock_data[:k]}
+    
+@app.get("/local_search")
+async def local_search(keywords: str, k: int = 10):
+    return {"result": songs_index.search(keywords, k)}
 
 @app.get("/autocomplete")
 async def autocomplete(word: str):
