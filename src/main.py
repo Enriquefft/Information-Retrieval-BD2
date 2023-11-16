@@ -8,6 +8,9 @@ from psycopg2.extensions import connection, cursor
 
 from typing import Any, cast
 from os import getenv
+from dotenv import load_dotenv
+
+load_dotenv()
 app = FastAPI()
 
 songs_index = SongsInvertedIndex()

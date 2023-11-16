@@ -36,7 +36,7 @@ class Index:
             self.create_blocks()
 
     def save(self) -> None:
-        if not path.exists(self.source_filename + ".cofig"):
+        if not path.exists(self.source_filename + ".config"):
             with open(self.source_filename + ".config", "wb") as file:
                 file.write(struct.pack("@ii", self.number_documents,
                                    self.n_blocks))
