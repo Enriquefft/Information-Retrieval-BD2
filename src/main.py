@@ -7,6 +7,9 @@ from typing import Any, cast
 from os import getenv
 from dotenv import load_dotenv
 
+from psycopg2 import connect
+from psycopg2.extensions import connection, cursor as cursorT
+
 load_dotenv()
 app = FastAPI()
 
@@ -29,7 +32,7 @@ async def LocalText(keywords: str, k: int = 10) -> TracksInfo:
 async def PostgresText(keywords: str) -> TracksInfo:
 
     db_cursor: cursorT
-    with connection.cursor() as db_cursor:
+    with db.cursor() as db_cursor:
         db_cursor.execute(
             """SELECT track_id FROM tracks WHERE to_tsvector('english', lyrics) @@ to_tsquery('english', %s);""",
             (keywords, ))

@@ -1,19 +1,24 @@
 from src.InvertedIndex.index import Index
-from .config import CSV_PATH
+
+from os import getenv
+
+from typing import Optional
+from pathlib import Path
 
 
 class SongsInvertedIndex():
 
-    attributes: set[str] = set()
-    attributes.add("track_name")
-    attributes.add("track_artist")
-    attributes.add("lyrics")
+    def __init__(self, csv_path: Optional[str] = None) -> None:
 
-    def __init__(self) -> None:
+        if csv_path is None:
+            csv_path = getenv('CSV_PATH')
+            if csv_path is None:
+                raise ValueError(
+                    "csv_path must be present as env or input parameter")
 
         attributes: set[str] = {"track_name", "track_artist", "lyrics"}
 
-        self.index: Index = Index(str(CSV_PATH), attributes)
+        self.index: Index = Index(csv_path, attributes)
         self.index.save()
         self.index.load()
 
