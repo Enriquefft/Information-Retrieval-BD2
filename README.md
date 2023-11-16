@@ -2,6 +2,38 @@
 
 Search and Information Retrieval system made for the DB2 course.
 
+## Introduction
+
+<div style="text-align: justify">
+Information retrieval is the process of obtaining information from a collection of documents. The goal of this project is to build a search engine that allows users to search for songs. In the first part of the project, the search engine will be built using the Single Pass In-Memory Indexing technique. The second part of the project deals with data of multiple dimensions and the use of high dimensional indexing techniques. 
+</div>
+
+### Objective
+
+* Index documents in secondary memory through the construction of an Inverted Index with the Single Pass In-Memory Indexing technique.
+
+* Retrieve documents from the index using cosine similarity and the TF-IDF weighting scheme.
+
+### Dataset - Spotify Songs
+
+<div style="text-align: justify">
+The dataset contains over 18000 Spotify songs along with their lyrics and information about the artist, genre, etc. The dataset is in CSV format and was extrated from <a href="https://www.kaggle.com/datasets/imuhammad/audio-features-and-lyrics-of-spotify-songs">Kaggle</a>.
+</div>
+
+<div style="text-align: justify">
+Example of a document and attributes to be indexed:
+</div>
+
+```json
+{
+    "track_name":"Pangarap",
+    "track_artist":"Barbie's Cradle",
+    "lyrics":"Minsan pa Nang ako'y napalingon Hindi ko alam...",
+    "playlist_genre":"rock",
+    "playlist_subgenre":"classic rock"
+}
+```
+
 ## Backend
 
 Backend made in FastAPI with a PostgreSQL database.
