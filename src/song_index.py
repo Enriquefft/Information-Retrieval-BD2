@@ -1,13 +1,15 @@
 import sys
+
 sys.path.append('../Information-Retrieval-BD2')
 
-from InvertedIndex import Index
+from .InvertedIndex.index import Index
+
 
 class SongsInvertedIndex():
-    index:Index = None
-    csv_file_path:str = "./CSV/spotify_songs.csv"
+    index: Index = None
+    csv_file_path: str = "./CSV/spotify_songs.csv"
 
-    attributes:set = set()
+    attributes: set[str] = set()
     attributes.add("track_name")
     attributes.add("track_artist")
     attributes.add("lyrics")
@@ -16,6 +18,5 @@ class SongsInvertedIndex():
         self.index = Index(self.csv_file_path, self.attributes)
         self.index.load()
 
-    def search(self, keywords:str, k:int = 10):
+    def search(self, keywords: str, k: int = 10) -> list[tuple[str, float]]:
         return self.index.retrieval(keywords, k)
-

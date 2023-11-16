@@ -33,5 +33,4 @@ CREATE TABLE tracks (
     language VARCHAR(30)
 );
 
-
 COMMIT;

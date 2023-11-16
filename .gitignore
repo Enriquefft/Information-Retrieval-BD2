@@ -1,4 +1,6 @@
-__pycache__
+**/__pycache__/
+**/.mypy_cache/
+
 spotify_songs.csv
 spotify_songs.csv.processed
 spotify_songs.csv.config
@@ -6,4 +8,14 @@ spotify_songs.csv_norms.dat
 blocks
 venv
 *_blocks
-.vscode
+**/.vscode
+
+# ZIG
+
+**/zig-cache/
+**/zig-out/
+**/release/
+**/debug/
+**/build/
+**/build-*/
+**/docgen_tmp/

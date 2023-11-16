@@ -1,54 +1,45 @@
 from src.song_index import SongsInvertedIndex
 from fastapi import FastAPI
 
+from pydantic import BaseModel
+
+from psycopg2 import connect, extensions
+from psycopg2.extensions import connection, cursor
+
+from typing import Any, cast
+
 app = FastAPI()
 
 songs_index = SongsInvertedIndex()
 
-mock_data = [
-    {
-        "track_id": "004s3t0ONYlzxII9PLgU6z",
-        "track_name": "Canción A",
-        "track_artist": "Artista A",
-        "lyrics": "Letras de la canción A.",
-        "track_popularity": 80,
-        "track_album_id": "A1",
-        "track_album_name": "Álbum A",
-        "track_album_release_date": "2022-01-15",
-        "playlist_name": "Playlist A",
-        "playlist_id": "PA1",
-        "playlist_genre": "Pop",
-        "playlist_subgenre": "Indie Pop",
-        "danceability": 0.75,
-        "energy": 0.85,
-        "key": 7,
-        "loudness": -4.2,
-        "mode": 1,
-        "speechiness": 0.12,
-        "acousticness": 0.2,
-        "instrumentalness": 0.03,
-        "liveness": 0.1,
-        "valence": 0.88,
-        "tempo": 120,
-        "duration_ms": 240000,
-        "language": "es"
-    }
-] * 100000000
+db: connection = connect(host='localhost', dbname='spotify')
 
-@app.get("/postgres_search")
-async def search(keywords: str, k: int = 10):
-    return {"result": mock_data[:k]}
-    
-@app.get("/local_search")
-async def local_search(keywords: str, k: int = 10):
-    return {"result": songs_index.search(keywords, k)}
+TracksInfo = list[tuple[str, float]]
 
-@app.get("/autocomplete")
-async def autocomplete(word: str):
-    return {"result": [
-        word + "a", 
-        word + "b", 
-        word + "c", 
-        word + "d", 
-        word + "e"
-        ]}
+
+@app.get("/local/text")
+async def LocalText(keywords: str, k: int = 10) -> TracksInfo:
+    return songs_index.search(keywords, k)
+
+
+@app.get("/postgres/text")
+async def PostgresText(keywords: str) -> TracksInfo:
+
+    db_cursor: cursor
+    with db.cursor() as db_cursor:
+        db_cursor.execute(
+            """SELECT track_id FROM tracks WHERE to_tsvector('english', lyrics) @@ to_tsquery('english', %s);""",
+            (keywords, ))
+        results: TracksInfo = cast(TracksInfo, db_cursor.fetchall())
+
+        return results
+
+
+@app.get("/local/autocomplete")
+async def LocalAutocomplete(word: str) -> list[str]:
+    return [word + "a", word + "b", word + "c", word + "d", word + "e"]
+
+
+@app.get("/postgres/autocomplete")
+async def PostgresAutocomplete(word: str) -> list[str]:
+    return [word + "a", word + "b", word + "c", word + "d", word + "e"]
