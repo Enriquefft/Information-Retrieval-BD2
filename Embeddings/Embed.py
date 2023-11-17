@@ -11,6 +11,8 @@ from numpy.typing import NDArray
 
 from typing import Annotated, Literal, Optional
 
+import logging
+
 SONGS_PATH = Path('songs')
 
 Array1D = Annotated[NDArray[np.double], Literal["N"]]
