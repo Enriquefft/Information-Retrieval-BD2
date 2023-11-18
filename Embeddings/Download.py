@@ -1,10 +1,11 @@
 """Module for downloading a Spotify playlist using the Spotify API."""
 
-from pytube import YouTube, Search, Stream
-from pytube.exceptions import AgeRestrictedError, LiveStreamError
+from pytube import YouTube, Search, Stream  # type: ignore
+from pytube.exceptions import AgeRestrictedError, LiveStreamError  # type: ignore
+import youtube_dl
 
-from spotipy import Spotify
-from spotipy.oauth2 import SpotifyClientCredentials
+from spotipy import Spotify  # type: ignore
+from spotipy.oauth2 import SpotifyClientCredentials  # type: ignore
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -28,12 +29,20 @@ sp: Spotify = Spotify(client_credentials_manager=client_credentials_manager)
 
 BASE_OUTPUT_PATH: Final[Path] = Path("songs/")
 
+from enum import Enum
+
+
+class DownloadMethod(Enum):
+    """Enum for the download method."""
+    YOUTUBE_DL = 1
+    PYTUBE = 2
+
 
 class Downloader():
     """Class for downloading a Spotify playlist."""
 
-    def __init__(self, csv_path: Optional[Path], playlist_id: Optional[str],
-                 userFavourites: bool):
+    def __init__(self, dl_method: DownloadMethod, csv_path: Optional[Path],
+                 playlist_id: Optional[str], userFavourites: bool):
         """Initialize a Downloader object."""
 
         # Only one of csv_path and playlist_id should be set
@@ -49,6 +58,11 @@ class Downloader():
             self.get_method = self.get_songs_by_playlist
         elif userFavourites:
             self.get_method = self.get_songs_by_favourites
+
+        if dl_method == DownloadMethod.YOUTUBE_DL:
+            self.download_method = self.download_song_youtube_dl
+        elif dl_method == DownloadMethod.PYTUBE:
+            self.download_method = self.download_song_pytube
 
         self.playlist_id: str | None = playlist_id
         self.userFavourites: bool = userFavourites
@@ -82,7 +96,35 @@ class Downloader():
         return ((item['track']['id'], item['track']['name'])
                 for item in sp.playlist(self.playlist_id)['tracks']['items'])
 
-    def download_song(self, song: tuple[str, str]) -> Path | None:
+    def download_song_youtube_dl(self, song: tuple[str, str]) -> Path | None:
+        """Download a song audio by searching its name on yt.
+
+        @param song: A tuple of [song_name, song_id]
+        @return: The path to the downloaded song
+        """
+        try:
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'outtmpl': f'{self.output_path}/{song[0]}.%(ext)s',
+            }
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(song[1], download=False)
+                audio_url = info_dict['url']
+                if audio_url is None:
+                    logging.warning(
+                        f"Could not find an audio URL for {song[1]}")
+                    return None
+                ydl.download([audio_url])
+                return Path(f'{self.output_path}/{song[0]}.{info_dict["ext"]}')
+        except youtube_dl.utils.DownloadError as e:
+            return None
+
+    def download_song_pytube(self, song: tuple[str, str]) -> Path | None:
+        """Download a song audio by searching its name on yt.
+
+        @param song: A tuple of [song_name, song_id]
+        @return: The path to the downloaded song
+        """
         try:
             yt_result: YouTube = Search(song[1]).results[0]
             stream = yt_result.streams.get_audio_only(subtype="mp4")

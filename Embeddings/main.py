@@ -1,4 +1,4 @@
-from Download import Downloader
+from Download import Downloader, YOUTUBE_DL, PYTUBE
 from Embed import get_mfcc_features_flatenized, get_sample_rate
 
 from typing import Final, cast
@@ -85,7 +85,8 @@ def run() -> None:
     """)
     db.commit()
 
-    downloader = Downloader(csv_path=getenv('CSV_PATH'),
+    downloader = Downloader(YOUTUBE_DL,
+                            csv_path=getenv('CSV_PATH'),
                             userFavourites=False,
                             playlist_id=None)
     song: Path
