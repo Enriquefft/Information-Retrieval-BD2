@@ -2,7 +2,7 @@ import os
 import re
 import shutil
 import unittest
-from InvertedIndex import Index
+from src.InvertedIndex import Index
 
 class TestInvertIndex(unittest.TestCase):
     def setUp(self) -> None:
