@@ -1,6 +1,6 @@
 """Module for extracting audio features from audio files."""
 
-from memory_profiler import profile
+# from memory_profiler import profile
 import librosa
 
 from pathlib import Path
@@ -23,7 +23,7 @@ class Embedder():
         self.sample_rate = sample_rate
         self.max_duration_seconds = max_duration_seconds
 
-    @profile
+    # @profile
     def get_mfcc_features_flatenized(self, song_path: Path) -> np.ndarray:
         """Extract the mfcc features for each song in a path"""
 

@@ -21,12 +21,10 @@ from os import getenv
 
 import logging
 
+logging.basicConfig(
+    filename='logs/error' /
+    Path(getenv('CSV_PATH') or getenv('PLAYLIST_ID') or 'favourites') / '.log')
 logging.root.setLevel(logging.INFO)
-
-# 160k * 3 floats stored in ram
-
-playlist_id: Final[str] = '6Nqv8Mi4xKEOXBLcIbDopO'  # Reggaeton
-# playlist_id: Final[str] = '3BK3JOso50tW2O8JAlsjvn'  # BD2 Test
 
 vector_dimension: Final[int] = cast(int,
                                     getenv("VECTOR_DIMENSION")) or 16000 * 9
@@ -38,7 +36,15 @@ db: connection = connect(user=getenv("POSTGRES_USER") or 'postgres',
                          host=getenv("POSTGRES_HOST"),
                          port=getenv("POSTGRES_PORT") or 5432)
 
-embedder: Embedder = Embedder()
+embedder: Embedder = Embedder(
+    max_duration_seconds=167.24
+)  # This time often produces vectors of aproximately 16000 * 9 length
+
+downloader = Downloader(DownloadMethod.PYTUBE,
+                        csv_path=getenv('CSV_PATH'),
+                        userFavourites=False,
+                        playlist_id=None,
+                        db=db)
 
 
 def process_song(song_path: Path) -> None:
@@ -70,7 +76,6 @@ def process_song(song_path: Path) -> None:
             "", (track_id, *features_parts))
     logging.info(f"Inserted song {track_id}")
     db.commit()
-    logging.info(f"Committed song {track_id}")
 
 
 def run() -> None:
@@ -94,10 +99,6 @@ def run() -> None:
         db.commit()
     logging.info("DB created")
 
-    downloader = Downloader(DownloadMethod.PYTUBE,
-                            csv_path=getenv('CSV_PATH'),
-                            userFavourites=False,
-                            playlist_id=None)
     song: Path
     for song in downloader.download_songs():
         logging.info(f"Downloaded song: {song}")
