@@ -1,5 +1,11 @@
-from Download import Downloader, YOUTUBE_DL, PYTUBE
-from Embed import get_mfcc_features_flatenized, get_sample_rate
+from Download import Downloader, DownloadMethod
+from Embed import Embedder
+
+import warnings
+
+warnings.filterwarnings('ignore')
+
+import tracemalloc
 
 from typing import Final, cast
 
@@ -14,6 +20,8 @@ from dotenv import load_dotenv
 from os import getenv
 
 import logging
+
+logging.root.setLevel(logging.INFO)
 
 # 160k * 3 floats stored in ram
 
@@ -30,16 +38,15 @@ db: connection = connect(user=getenv("POSTGRES_USER") or 'postgres',
                          host=getenv("POSTGRES_HOST"),
                          port=getenv("POSTGRES_PORT") or 5432)
 
+embedder: Embedder = Embedder()
 
-def process_song(song: Path) -> None:
 
-    track_id: str = song.stem
+def process_song(song_path: Path) -> None:
 
-    if song is None:
-        return
-
-    features = get_mfcc_features_flatenized(song)
+    track_id: str = song_path.stem
     logging.info(f"Processing song {track_id}")
+
+    features = embedder.get_mfcc_features_flatenized(song_path)
 
     # truncate or pad to VECTOR_DIMENSION
     if features.shape[0] > vector_dimension:
@@ -61,12 +68,13 @@ def process_song(song: Path) -> None:
             ""
             "INSERT INTO song_features (track_id, features1, features2, features3, features4, features5, features6, features7, features8, features9) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
             "", (track_id, *features_parts))
+    logging.info(f"Inserted song {track_id}")
     db.commit()
+    logging.info(f"Committed song {track_id}")
 
 
 def run() -> None:
 
-    # Create DB
     with db.cursor() as create_cursor:
         create_cursor.execute("""
             CREATE EXTENSION IF NOT EXISTS vector;
@@ -83,14 +91,16 @@ def run() -> None:
         features9 VECTOR(16000)
     );
     """)
-    db.commit()
+        db.commit()
+    logging.info("DB created")
 
-    downloader = Downloader(YOUTUBE_DL,
+    downloader = Downloader(DownloadMethod.PYTUBE,
                             csv_path=getenv('CSV_PATH'),
                             userFavourites=False,
                             playlist_id=None)
     song: Path
     for song in downloader.download_songs():
+        logging.info(f"Downloaded song: {song}")
         process_song(song)
 
 

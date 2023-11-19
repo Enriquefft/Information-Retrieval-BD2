@@ -22,6 +22,9 @@ fastapi = "^0.104.1"
 uvicorn = "^0.24.0.post1"
 poethepoet = "^0.24.3"
 nltk = "^3.8.1"
+memory-profiler = "^0.61.0"
+python-dotenv = "^1.0.0"
+pytubefix = "^1.8.3"
 
 [tool.poetry.group.dev.dependencies]
 pip = "^23.3.1"

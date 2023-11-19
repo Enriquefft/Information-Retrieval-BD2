@@ -9,6 +9,8 @@ from spotipy.oauth2 import SpotifyClientCredentials  # type: ignore
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from pprint import pprint
+
 import numpy as np
 
 from typing import Final, Optional, Generator
@@ -72,6 +74,7 @@ class Downloader():
                                                      or 'favourites')
 
     def get_songs_by_csv(self) -> Generator[tuple[str, str], None, None]:
+        """Get a list of [trackid, songname] from a Spotify playlist."""
 
         if self.csv_path is None:
             raise ValueError("csv_path is None")
@@ -99,17 +102,22 @@ class Downloader():
     def download_song_youtube_dl(self, song: tuple[str, str]) -> Path | None:
         """Download a song audio by searching its name on yt.
 
-        @param song: A tuple of [song_name, song_id]
+        @param song: A tuple of [track_id, song_name]
         @return: The path to the downloaded song
         """
         try:
             ydl_opts = {
+                'default_search': 'ytsearch',
                 'format': 'bestaudio/best',
                 'outtmpl': f'{self.output_path}/{song[0]}.%(ext)s',
+                'quiet': True,
+                'no_warnings': True,
             }
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                info_dict = ydl.extract_info(song[1], download=False)
-                audio_url = info_dict['url']
+                info_dict = ydl.extract_info(f"ytsearch:{song[1]}",
+                                             download=False)
+                audio_url = info_dict['entries'][0]['webpage_url']
+                pprint(info_dict['entries'])
                 if audio_url is None:
                     logging.warning(
                         f"Could not find an audio URL for {song[1]}")
@@ -122,12 +130,12 @@ class Downloader():
     def download_song_pytube(self, song: tuple[str, str]) -> Path | None:
         """Download a song audio by searching its name on yt.
 
-        @param song: A tuple of [song_name, song_id]
+        @param song: A tuple of [track_id, song_name]
         @return: The path to the downloaded song
         """
         try:
             yt_result: YouTube = Search(song[1]).results[0]
-            stream = yt_result.streams.get_audio_only(subtype="mp4")
+            stream = yt_result.streams.get_audio_only()
             if stream is None:
                 logging.warning(
                     f"Could not find an mp4 audio stream for {song[1]}")
@@ -143,6 +151,6 @@ class Downloader():
         """Download a song b its name."""
 
         for song in self.get_method():
-            song_path = self.download_song(song)
+            song_path = self.download_method(song)
             if song_path is not None:
                 yield song_path
