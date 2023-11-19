@@ -21,10 +21,21 @@ from os import getenv
 
 import logging
 
-logging.basicConfig(
-    filename='logs/error' /
-    Path(getenv('CSV_PATH') or getenv('PLAYLIST_ID') or 'favourites') / '.log')
-logging.root.setLevel(logging.INFO)
+csv_path = getenv('CSV_PATH')
+playlist_id = getenv('PLAYLIST_ID')
+favourites_log_name = 'favourites'
+
+if csv_path:
+    log_name = Path(csv_path).stem
+elif playlist_id:
+    log_name = playlist_id
+else:
+    log_name = favourites_log_name
+
+log_file = Path('logs/error') / (log_name + '.log')
+
+logging.basicConfig(filename=log_file)
+logging.root.setLevel(logging.WARNING)
 
 vector_dimension: Final[int] = cast(int,
                                     getenv("VECTOR_DIMENSION")) or 16000 * 9
@@ -73,9 +84,8 @@ def process_song(song_path: Path) -> None:
     cursor: cursorT
     with db.cursor() as cursor:
         cursor.execute(
-            f""
-            "INSERT INTO {TABLE_NAME} (track_id, features1, features2, features3, features4, features5, features6, features7, features8, features9) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-            "", (track_id, *features_parts))
+            f"""INSERT INTO {TABLE_NAME} (track_id, features1, features2, features3, features4, features5, features6, features7, features8, features9) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (track_id, *features_parts))
     logging.info(f"Inserted song {track_id}")
     db.commit()
 
