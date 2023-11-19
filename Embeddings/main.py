@@ -46,6 +46,8 @@ downloader = Downloader(DownloadMethod.PYTUBE,
                         playlist_id=None,
                         db=db)
 
+TABLE_NAME = getenv('TABLE_NAME') or 'track_features'
+
 
 def process_song(song_path: Path) -> None:
 
@@ -71,8 +73,8 @@ def process_song(song_path: Path) -> None:
     cursor: cursorT
     with db.cursor() as cursor:
         cursor.execute(
-            ""
-            "INSERT INTO song_features (track_id, features1, features2, features3, features4, features5, features6, features7, features8, features9) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            f""
+            "INSERT INTO {TABLE_NAME} (track_id, features1, features2, features3, features4, features5, features6, features7, features8, features9) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
             "", (track_id, *features_parts))
     logging.info(f"Inserted song {track_id}")
     db.commit()
@@ -81,9 +83,9 @@ def process_song(song_path: Path) -> None:
 def run() -> None:
 
     with db.cursor() as create_cursor:
-        create_cursor.execute("""
+        create_cursor.execute(f"""
             CREATE EXTENSION IF NOT EXISTS vector;
-            CREATE TABLE IF NOT EXISTS song_features (
+            CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
         track_id VARCHAR(22) PRIMARY KEY,
         features1 VECTOR(16000),
         features2 VECTOR(16000),

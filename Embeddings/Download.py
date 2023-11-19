@@ -18,6 +18,8 @@ import logging
 
 from psycopg2.extensions import connection, cursor
 
+from os import getenv
+
 # Set up credentials
 client_id: Final[str] = '5b0ac652d91f4d2a89f62f99d568cd34'
 client_secret: Final[str] = 'b450d640d4f44a13928f7725475a270b'
@@ -80,7 +82,7 @@ class Downloader():
         cur: cursor
         with self.db.cursor() as cur:
             cur.execute(
-                "SELECT EXISTS(SELECT 1 FROM song_features WHERE track_id=%s)",
+                f"SELECT EXISTS(SELECT 1 FROM {getenv('TABLE_NAME')} WHERE track_id=%s)",
                 (track_id, ))
             exists = cur.fetchone()
             if exists is None:
