@@ -78,7 +78,6 @@ class Downloader():
 
     def exists_in_db(self, track_id: str) -> bool:
         """Check if a song exists in the database."""
-        logging.info(f"Checking if {track_id} exists in the database.")
         cur: cursor
         with self.db.cursor() as cur:
             cur.execute(
@@ -105,11 +104,11 @@ class Downloader():
             track_artist_index = headers.index('track_artist')
 
             # Advance to the first row whose track_id is not in the database
-            logging.info("Searching the first row not inserted yet.")
+            # logging.info("Searching the first row not inserted yet.")
             while True:
                 row = next(csv_reader)
                 if not self.exists_in_db(row[track_id_index]):
-                    logging.info(f"Found first row: {row[track_name_index]}")
+                    # logging.info(f"Found first row: {row[track_name_index]}")
                     yield (row[track_id_index], row[track_name_index],
                            row[track_artist_index])
                     break

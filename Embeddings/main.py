@@ -33,8 +33,7 @@ else:
     log_name = favourites_log_name
 
 log_file = Path('logs/error') / (log_name + '.log')
-
-logging.basicConfig(filename=log_file)
+logging.basicConfig(filename=log_file, filemode='w')
 logging.root.setLevel(logging.WARNING)
 
 vector_dimension: Final[int] = cast(int,
@@ -63,7 +62,6 @@ TABLE_NAME = getenv('TABLE_NAME') or 'track_features'
 def process_song(song_path: Path) -> None:
 
     track_id: str = song_path.stem
-    logging.info(f"Processing song {track_id}")
 
     features = embedder.get_mfcc_features_flatenized(song_path)
 
@@ -86,7 +84,6 @@ def process_song(song_path: Path) -> None:
         cursor.execute(
             f"""INSERT INTO {TABLE_NAME} (track_id, features1, features2, features3, features4, features5, features6, features7, features8, features9) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (track_id, *features_parts))
-    logging.info(f"Inserted song {track_id}")
     db.commit()
 
 
@@ -113,8 +110,8 @@ def run() -> None:
 
     song: Path
     for song in downloader.download_songs():
-        logging.info(f"Downloaded song: {song}")
         process_song(song)
+    logging.info("Finished procesing")
 
 
 if __name__ == "__main__":
