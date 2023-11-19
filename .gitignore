@@ -2,6 +2,9 @@
 **/.mypy_cache/
 **/.cache
 
+/songs
+/logs
+
 Embeddings/songs/*
 
 spotify_songs.csv
