@@ -1,4 +1,4 @@
-from src.song_index import SongsInvertedIndex
+from song_index import SongsInvertedIndex
 from fastapi import FastAPI
 
 from pydantic import BaseModel
@@ -10,15 +10,17 @@ from dotenv import load_dotenv
 from psycopg2 import connect
 from psycopg2.extensions import connection, cursor as cursorT
 
+import logging
+
 load_dotenv()
 app = FastAPI()
 
 songs_index = SongsInvertedIndex()
 
-db: connection = connect(host=getenv("POSTGRES_HOST"),
-                         dbname="postgres",
-                         user=getenv("POSTGRES_USER"),
-                         password=getenv("POSTGRES_PASSWORD"))
+db: connection = connect(user=getenv("POSTGRES_USER") or 'postgres',
+                         password=getenv("POSTGRES_PASSWORD"),
+                         host=getenv("POSTGRES_HOST"),
+                         port=getenv("POSTGRES_PORT") or 5432)
 
 TracksInfo = list[tuple[str, float]]
 

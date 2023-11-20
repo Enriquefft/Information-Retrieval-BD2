@@ -38,8 +38,8 @@ class Index:
     def save(self) -> None:
         if not path.exists(self.source_filename + ".config"):
             with open(self.source_filename + ".config", "wb") as file:
-                file.write(struct.pack("@ii", self.number_documents,
-                                   self.n_blocks))
+                file.write(
+                    struct.pack("@ii", self.number_documents, self.n_blocks))
 
     def load(self) -> None:
         with open(self.source_filename + ".config", "rb") as file:

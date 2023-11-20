@@ -1,0 +1,11 @@
+**
+
+!src/
+!CSV/spotify_songs.csv
+!Dockerfile
+
+
+!README.md
+
+!poetry.lock
+!pyproject.toml
