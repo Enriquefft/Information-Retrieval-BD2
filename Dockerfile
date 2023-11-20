@@ -21,8 +21,5 @@ RUN /root/.local/bin/poetry config virtualenvs.create false
 # Install any needed packages
 RUN /root/.local/bin/poetry install --only main --no-interaction --no-ansi
 
-# Make port 80 available to the world outside this container
-# EXPOSE 8001
-
 # Run the command to start uWSGI
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

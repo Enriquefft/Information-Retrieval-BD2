@@ -1,8 +1,6 @@
 from song_index import SongsInvertedIndex
 from fastapi import FastAPI
 
-from pydantic import BaseModel
-
 from typing import Any, cast
 from os import getenv
 from dotenv import load_dotenv
@@ -23,6 +21,11 @@ db: connection = connect(user=getenv("POSTGRES_USER") or 'postgres',
                          port=getenv("POSTGRES_PORT") or 5432)
 
 TracksInfo = list[tuple[str, float]]
+
+
+@app.get("/health")
+async def Health() -> bool:
+    return True
 
 
 @app.get("/local/text")
