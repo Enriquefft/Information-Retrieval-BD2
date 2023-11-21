@@ -1,7 +1,7 @@
-from song_index import SongsInvertedIndex
+from .song_index import SongsInvertedIndex
 from fastapi import FastAPI
 
-from typing import Any, cast
+from typing import Any, cast, Optional
 from os import getenv
 from dotenv import load_dotenv
 
@@ -10,10 +10,16 @@ from psycopg2.extensions import connection, cursor as cursorT
 
 import logging
 
+logging.basicConfig(level=logging.INFO)
+
 load_dotenv()
 app = FastAPI()
 
-songs_index = SongsInvertedIndex()
+ENV_CSV: Optional[str] = getenv("CSV_PATH")
+if ENV_CSV is None:
+    raise Exception("CSV_PATH environment variable is required")
+
+songs_index = SongsInvertedIndex(ENV_CSV)
 
 db: connection = connect(user=getenv("POSTGRES_USER") or 'postgres',
                          password=getenv("POSTGRES_PASSWORD"),
