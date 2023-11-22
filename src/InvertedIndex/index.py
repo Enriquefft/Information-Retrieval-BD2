@@ -9,6 +9,8 @@ from os import path
 
 from typing import Final, TextIO, BinaryIO, cast
 
+import logging
+
 
 class Index:
     UP: Final[bool] = False
@@ -226,14 +228,25 @@ class Index:
         Returns at most k similar documents in descending order
         """
         result = dict()
+
+        logging.info(f"Retrieving documents for query: {query}")
+
+        logging.info(
+            f"preprocess: {self.preprocess.preprocess_text(query).items()}")
+
         for term, tf in self.preprocess.preprocess_text(query).items():
+            logging.info(f"n_block: {self.n_blocks}")
             docs = self._binary_search(term, 1, self.n_blocks)
+            logging.info(f"docs: {docs}")
             if len(docs) != 0:
                 idf = self._calculate_idf(len(docs))
                 for doc, tf_idf in docs:
                     val = result.get(doc, 0)
                     val += tf_idf * tf * idf
                     result[doc] = val
+
+        logging.info(f"Retrieved {len(result)} documents")
+        logging.info(f"Retrieved {result}")
 
         return list(
             map(lambda x: (self.retrieve_document(x[0]), x[1]),

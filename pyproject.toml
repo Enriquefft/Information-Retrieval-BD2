@@ -32,3 +32,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poe.tasks]
 start = "uvicorn src.main:app --reload"
+clean = "bash scripts/clean.sh"

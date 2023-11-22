@@ -1,25 +1,21 @@
 from .song_index import SongsInvertedIndex
-from fastapi import FastAPI
+from .api import app
 
-from typing import Any, cast, Optional
+from fastapi import FastAPI, HTTPException
+
+from typing import Any, cast, Optional, Final
 from os import getenv
 from dotenv import load_dotenv
 
 from psycopg2 import connect
 from psycopg2.extensions import connection, cursor as cursorT
 
+from threading import Thread
+
 import logging
 
 logging.basicConfig(level=logging.INFO)
-
 load_dotenv()
-app = FastAPI()
-
-ENV_CSV: Optional[str] = getenv("CSV_PATH")
-if ENV_CSV is None:
-    raise Exception("CSV_PATH environment variable is required")
-
-songs_index = SongsInvertedIndex(ENV_CSV)
 
 db: connection = connect(user=getenv("POSTGRES_USER") or 'postgres',
                          password=getenv("POSTGRES_PASSWORD"),
@@ -28,15 +24,38 @@ db: connection = connect(user=getenv("POSTGRES_USER") or 'postgres',
 
 TracksInfo = list[tuple[str, float]]
 
+from time import sleep
 
-@app.get("/health")
-async def Health() -> bool:
-    return True
+index_thread: Thread
+index: SongsInvertedIndex
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    global index_thread, index
+
+    def get_idx() -> None:
+        global index
+        ENV_CSV: Optional[str] = getenv("CSV_PATH")
+        if ENV_CSV is None:
+            raise HTTPException(
+                status_code=500,
+                detail="CSV_PATH environment variable is required")
+        index = SongsInvertedIndex(ENV_CSV)
+        logging.info("Textual inverted index is ready to use")
+
+    logging.info("Api is ready to be used")
+
+    index_thread = Thread(target=get_idx)
+    index_thread.start()
 
 
 @app.get("/local/text")
 async def LocalText(keywords: str, k: int = 10) -> TracksInfo:
-    return songs_index.search(keywords, k)
+    if index_thread.is_alive():
+        raise HTTPException(status_code=500, detail="Index is not ready yet")
+    else:
+        return index.search(keywords, k)
 
 
 @app.get("/postgres/text")
