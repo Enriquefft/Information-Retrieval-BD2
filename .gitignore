@@ -6,8 +6,10 @@ spotify_songs.csv
 spotify_songs.csv.processed
 spotify_songs.csv.config
 spotify_songs.csv_norms.dat
+spotify_songs.csv.position
 blocks
 venv
+.env
 *_blocks
 **/.vscode
 
