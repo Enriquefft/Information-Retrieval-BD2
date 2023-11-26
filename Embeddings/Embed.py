@@ -23,7 +23,6 @@ class Embedder():
         self.sample_rate = sample_rate
         self.max_duration_seconds = max_duration_seconds
 
-    # @profile
     def get_mfcc_features_flatenized(self, song_path: Path) -> np.ndarray:
         """Extract the mfcc features for each song in a path"""
 
@@ -31,4 +30,5 @@ class Embedder():
                                 sr=self.sample_rate,
                                 duration=self.max_duration_seconds)
         mfcc = librosa.feature.mfcc(y=data, sr=sr)
+        chroma_cqt = librosa.feature.chroma_vqt(y=data, sr=sr)
         return mfcc.flatten()

@@ -2,8 +2,6 @@
 **/.mypy_cache/
 **/.cache
 
-/CSV
-
 /songs
 /logs
 
