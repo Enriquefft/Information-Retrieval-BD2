@@ -1,0 +1,3 @@
+pub const CLIENT_ID = "5b0ac652d91f4d2a89f62f99d568cd34";
+pub const CLIENT_SECRET = "b450d640d4f44a13928f7725475a270b";
+pub const PLAYLIST_ID = "6Nqv8Mi4xKEOXBLcIbDopO";

@@ -2,6 +2,15 @@
 **/.mypy_cache/
 **/.cache
 
+/CSV
+
+/songs
+/logs
+
+.env
+
+Embeddings/songs/*
+
 spotify_songs.csv
 spotify_songs.csv.processed
 spotify_songs.csv.config

@@ -1,0 +1,16 @@
+{
+  "ServiceName": "bd2-information-retrieval-api-service",
+  "SourceConfiguration": {
+    "AuthenticationConfiguration": {
+      "AccessRoleArn": "arn:aws:iam::216144596950:role/service-role/AppRunnerECRAccessRole"
+    },
+    "AutoDeploymentsEnabled": true,
+    "ImageRepository": {
+      "ImageIdentifier": "216144596950.dkr.ecr.us-east-1.amazonaws.com/information_retreival_service:latest",
+      "ImageConfiguration": {
+        "Port": "8000"
+      },
+      "ImageRepositoryType": "ECR"
+    }
+  }
+}
