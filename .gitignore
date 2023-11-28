@@ -8,6 +8,7 @@
 .env
 
 Embeddings/songs/*
+CSV/partitions
 
 spotify_songs.csv
 spotify_songs.csv.processed
