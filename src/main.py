@@ -22,6 +22,7 @@ load_dotenv()
 
 db: connection = connect(user=getenv("POSTGRES_USER") or 'postgres',
                          password=getenv("POSTGRES_PASSWORD"),
+                         database=getenv("POSTGRES_DB") or 'postgres',
                          host=getenv("POSTGRES_HOST"),
                          port=getenv("POSTGRES_PORT") or 5432)
 
@@ -76,15 +77,14 @@ async def LocalText(keywords: str, k: int = 10) -> TracksInfo:
     else:
         return index.search(keywords, k)
 
-
 @app.get("/postgres/text")
-async def PostgresText(keywords: str) -> TracksInfo:
+async def PostgresText(keywords: str, k:int = 10) -> TracksInfo:
 
     db_cursor: cursorT
     with db.cursor() as db_cursor:
         db_cursor.execute(
-            """SELECT track_id, 0 FROM tracks WHERE to_tsvector('english', lyrics) @@ to_tsquery('english', %s);""",
-            (keywords, ))
+            """SELECT track_id, 0 FROM tracks WHERE to_tsvector('english', track_name || ' ' || track_artist || ' ' || lyrics) @@ to_tsquery('english', %s) LIMIT %s""",
+            (keywords, k))
         results: TracksInfo = cast(TracksInfo, db_cursor.fetchall())
 
         return results
