@@ -2,6 +2,7 @@ from .song_index import SongsInvertedIndex
 from .api import app
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from typing import Any, cast, Optional, Final
 from os import getenv
@@ -11,6 +12,8 @@ from psycopg2 import connect
 from psycopg2.extensions import connection, cursor as cursorT
 
 from threading import Thread
+
+from .Multidimensional.faiss_index import knn_faiss
 
 import logging
 
@@ -29,6 +32,15 @@ from time import sleep
 index_thread: Thread
 index: SongsInvertedIndex
 
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 async def startup_event() -> None:
@@ -49,6 +61,13 @@ async def startup_event() -> None:
     index_thread = Thread(target=get_idx)
     index_thread.start()
 
+
+@app.get("/multidimensional/faiss/knn")
+async def MultidimensionalFaissKnn(track_id: str, k: int = 5):
+    if index_thread.is_alive():
+        raise HTTPException(status_code=500, detail="Index is not ready yet")
+    else:
+        return knn_faiss(track_id, k)
 
 @app.get("/local/text")
 async def LocalText(keywords: str, k: int = 10) -> TracksInfo:

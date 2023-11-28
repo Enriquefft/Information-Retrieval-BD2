@@ -20,6 +20,9 @@ venv
 *_blocks
 **/.vscode
 
+df.pkl
+index.faiss
+
 # ZIG
 
 **/zig-cache/
