@@ -1,5 +1,9 @@
-from .song_index import SongsInvertedIndex
+# from .song_index import SongsInvertedIndex
 from .api import app
+
+from .db import db
+
+from .lyrics import getLyrics
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,15 +25,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 load_dotenv()
 
-db: connection = connect(user=getenv("POSTGRES_USER") or 'postgres',
-                         password=getenv("POSTGRES_PASSWORD"),
-                         database=getenv("POSTGRES_DB") or 'postgres',
-                         host=getenv("POSTGRES_HOST"),
-                         port=getenv("POSTGRES_PORT") or 5432)
-
 TracksInfo = list[tuple[str, float]]
-
-from time import sleep
 
 index_thread: Thread
 index: SongsInvertedIndex
@@ -43,6 +39,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.on_event("startup")
 async def startup_event() -> None:
@@ -70,13 +67,15 @@ async def MultidimensionalFaissKnn(track_id: str, k: int = 5):
         raise HTTPException(status_code=500, detail="Index is not ready yet")
     else:
         return knn_faiss(track_id, k)
-    
+
+
 @app.get("/multidimensional/gist/knn")
 async def MultidimensionalGistKnn(track_id: str, k: int = 5):
     if index_thread.is_alive():
         raise HTTPException(status_code=500, detail="Index is not ready yet")
     else:
         return knn_gist(db, track_id, k)
+
 
 @app.get("/local/text")
 async def LocalText(keywords: str, k: int = 10) -> TracksInfo:
@@ -85,8 +84,9 @@ async def LocalText(keywords: str, k: int = 10) -> TracksInfo:
     else:
         return index.search(keywords, k)
 
+
 @app.get("/postgres/text")
-async def PostgresText(keywords: str, k:int = 10) -> TracksInfo:
+async def PostgresText(keywords: str, k: int = 10) -> TracksInfo:
 
     db_cursor: cursorT
     with db.cursor() as db_cursor:
@@ -96,6 +96,39 @@ async def PostgresText(keywords: str, k:int = 10) -> TracksInfo:
         results: TracksInfo = cast(TracksInfo, db_cursor.fetchall())
 
         return results
+
+
+@app.get("/faiss/audio")
+async def FaissAudio(trackid: str) -> TracksInfo:
+    return []
+
+
+@app.get("/rtree/audio")
+async def RTreeAudio(trackid: str) -> TracksInfo:
+    return []
+
+
+@app.get("/knn/audio")
+async def KnnAudio(trackid: str) -> TracksInfo:
+    return []
+
+
+@app.get("/shazam/audio")
+async def ShazamAudio(trackid: str) -> TracksInfo:
+    return []
+
+
+@app.get("/shazam/lyrics")
+async def ShazamLyrics(trackid: str) -> TracksInfo:
+    return []
+
+
+@app.get("/lyrics")
+async def QueryLyrics(track_id: str) -> str:
+    response = getLyrics(track_id)
+    if response is None:
+        raise HTTPException(status_code=404, detail="Lyrics not found")
+    return response
 
 
 @app.get("/local/autocomplete")

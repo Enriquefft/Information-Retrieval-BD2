@@ -32,13 +32,13 @@ def rythm_spectral_features(data: np.ndarray,
                             sr: float) -> tuple[np.ndarray, np.ndarray, float]:
 
     # Extract spectral features
-    # spectral_features = mfcc_features(data, sr)
+    spectral_features = spectral_contrast(y=data, sr=sr)
 
     # Extract rhythm features
     beat, rhythmic_features = beat_track(y=data, sr=sr)
 
     # Flatten the spectral features into a single dimension vector
-    spectral_vector = mfcc_features(data, sr)
+    spectral_vector = spectral_features.flatten()
 
     # Concatenate the spectral and rhythmic vectors
     return spectral_vector, rhythmic_features, beat
