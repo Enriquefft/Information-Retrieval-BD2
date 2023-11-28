@@ -153,17 +153,7 @@ poe db_init # Initializes the database and its indexes
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- RESULTS -->
 
-## Results
-
-<!-- CONCLUSION -->
-
-## Conclusion
-
-to gucci
-
-<!-- LICENSE -->
 
 ## License
 
