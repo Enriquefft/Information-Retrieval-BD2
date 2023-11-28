@@ -3,7 +3,7 @@ from .api import app
 
 from .db import db
 
-from .lyrics import getLyrics
+from .info import getLyrics, getUri
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -138,4 +138,10 @@ async def LocalAutocomplete(word: str) -> list[str]:
 
 @app.get("/postgres/autocomplete")
 async def PostgresAutocomplete(word: str) -> list[str]:
-    return [word + "a", word + "b", word + "c", word + "d", word + "e"]
+    with db.cursor() as db_cursor:
+        db_cursor.execute(
+            """SELECT track_name, track_name <-> %s as dist FROM tracks ORDER BY dist LIMIT 3""",
+            (word, ))
+        results: list[tuple[str, float]] = cast(list[tuple[str, float]],
+                                                db_cursor.fetchall())
+        return [result[0] for result in results]

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ./read_env.sh DB_NAME CSV_PATH CSV_TYPE
+source ./read_env.sh DB_NAME POSTGRES_USER POSTGRES_HOST CSV_PATH CSV_TYPE
 
 
 
@@ -18,6 +18,6 @@ fi
 
 
 # Copy tracks from CSV file to database
-psql -d $DB_NAME -c "\COPY tracks FROM '$CSV_FILE' DELIMITER ',' CSV HEADER;"
+psql -h $POSTGRES_HOST -U $POSTGRES_USER -d $DB_NAME -c "\COPY tracks FROM '$CSV_FILE' DELIMITER ',' CSV HEADER;"
 
 
