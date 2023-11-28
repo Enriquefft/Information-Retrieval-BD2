@@ -14,6 +14,7 @@ from psycopg2.extensions import connection, cursor as cursorT
 from threading import Thread
 
 from .Multidimensional.faiss_index import knn_faiss
+from .Multidimensional.gist_index import knn_gist
 
 import logging
 
@@ -69,6 +70,13 @@ async def MultidimensionalFaissKnn(track_id: str, k: int = 5):
         raise HTTPException(status_code=500, detail="Index is not ready yet")
     else:
         return knn_faiss(track_id, k)
+    
+@app.get("/multidimensional/gist/knn")
+async def MultidimensionalGistKnn(track_id: str, k: int = 5):
+    if index_thread.is_alive():
+        raise HTTPException(status_code=500, detail="Index is not ready yet")
+    else:
+        return knn_gist(db, track_id, k)
 
 @app.get("/local/text")
 async def LocalText(keywords: str, k: int = 10) -> TracksInfo:

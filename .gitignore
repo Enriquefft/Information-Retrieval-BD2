@@ -5,6 +5,8 @@
 /songs
 /logs
 
+umap.pd
+
 .env
 
 Embeddings/songs/*
